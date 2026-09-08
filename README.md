@@ -58,7 +58,7 @@ Above each graph is a sentence describing the current shape, for example "4.5 no
 
 The vertical scale is relative, so only the shape matters: the population slider sets how many people there are in total, and the graph divides them between the ages. Hovering a point tells you what share of people are that age. The summary above the graph gives the median age and the share of children and retired people that the shape implies.
 
-A hollow marker at age 0 shows how big the newborn cohort would be at today's fertility rate. If your age-0 point sits well above or below it, the first year of the projection will have a step in births. Match them and the past blends smoothly into the future.
+One thing to know: the height at age 0 is the number of babies born recently, and the fertility graph decides how many are born from next year on. If the two disagree, the first year of the projection has a small step in births. The Balanced shape and the default fertility of 1.6 are close to each other.
 
 ### Fertility
 

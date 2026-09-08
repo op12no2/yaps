@@ -390,15 +390,6 @@ class CurveEditor {
     const N = Math.max(40, Math.round(g.x1 - g.x0) >> 1);
     for (let i = 0; i <= N; i++) { const t = i / N, [x, y] = this.toPx(t, clamp(f(t), b[0], b[1]), g, b); i ? c.lineTo(x, y) : c.moveTo(x, y); }
     c.stroke();
-    if (ages) {
-      // hollow marker at age 0: the cohort today's fertility would produce, in the graph's own units
-      const n = pyramidFromCurve(pts, 1), share = birthShare(n, interpolator(state.fert)(0));
-      const rel = share * this.curveSum(pts);
-      if (rel > b[0] && rel < b[1]) {
-        const [x, y] = this.toPx(0, rel, g, b); c.beginPath(); c.arc(x, y, 5, 0, Math.PI * 2); c.strokeStyle = css('--ink-2'); c.lineWidth = 1.5; c.stroke(); c.lineWidth = 2;
-        c.font = '10px "IBM Plex Mono", ui-monospace, monospace'; c.fillStyle = css('--muted'); c.textAlign = 'left'; c.fillText('births at today\'s fertility', x + 9, y + 13);
-      }
-    }
     pts.forEach((p, i) => {
       const [x, y] = this.toPx(p.t, p.v, g, b); const removing = this.drag && this.drag.i === i && this.drag.removed;
       c.beginPath(); c.arc(x, y, 6, 0, Math.PI * 2); c.fillStyle = css('--surface'); c.fill();
