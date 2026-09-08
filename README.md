@@ -33,7 +33,7 @@ Hover anywhere on the chart for the exact values in that year. The active chip i
 
 At the top of the panel is a one-line summary: population today, population at the end of the projection, the percentage change, how the median age moves, and where the MVP ratio ends up.
 
-- **Population today.** A slider from 100 thousand to 2 billion. It moves in proportional steps, so small towns and whole continents are both within reach without the low end being cramped.
+- **Population today.** A slider from 100 thousand to 12 billion. It moves in proportional steps, so a small town and the whole planet are both within reach without the low end being cramped.
 - **Age profile.** A three-way choice: Young, Balanced or Older. This is a rough description of how many children versus pensioners there are today. A country like Nigeria is Young, most of Western Europe is Balanced, Japan is Older. It matters a lot: an Older population keeps shrinking for decades even if fertility recovers, because there are fewer people of parenting age.
 - **Four small graphs** for fertility, life expectancy, retirement age and net migration. See the next section.
 

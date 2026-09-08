@@ -398,7 +398,7 @@ function curveSummary(key) {
   if (!same(ext.v, z) && !same(ext.v, a)) return `<b>${s.fmt(a)}</b> now, ${ext.v > a ? 'peaking at' : 'dipping to'} ${s.fmt(ext.v)} around ${Math.round(YEAR0 + ext.t * state.horizon)}, then ${s.fmt(z)} by ${end}`;
   return `<b>${s.fmt(a)}</b> now, ${z > a ? 'rising' : 'falling'} to <b>${s.fmt(z)}</b> by ${end}`;
 }
-const POP_MIN = 1e5, POP_MAX = 2e9;
+const POP_MIN = 1e5, POP_MAX = 12e9;
 const popFromSlider = t => { const v = POP_MIN * Math.pow(POP_MAX / POP_MIN, t / 1000); const p = Math.pow(10, Math.floor(Math.log10(v)) - 1); return Math.round(v / p) * p; };
 const sliderFromPop = v => Math.round(Math.log(clamp(v, POP_MIN, POP_MAX) / POP_MIN) / Math.log(POP_MAX / POP_MIN) * 1000);
 const popIn = document.getElementById('popIn'), popVal = document.getElementById('popVal'), profileSeg = document.getElementById('profileSeg'), curvesEl = document.getElementById('curves'), summaryEl = document.getElementById('summary');
