@@ -41,6 +41,7 @@ header input[type=range]{width:160px}
 .field .val{min-width:2.4em;color:var(--ink)}
 .btn{background:var(--surface-2);border:1px solid transparent;border-radius:6px;padding:6px 12px;cursor:pointer;white-space:nowrap}
 .btn:hover{background:var(--surface-3)}
+.btn.danger{background:var(--danger);color:#fff}
 
 main{display:grid;grid-template-columns:380px 1fr;min-height:0}
 #sidebar{border-right:1px solid var(--hair);overflow-y:auto;padding:14px 16px 20px;display:flex;flex-direction:column;gap:16px;background:var(--surface)}
@@ -502,9 +503,15 @@ horizonEl.addEventListener('input', () => { state.horizon = +horizonEl.value; ho
 document.getElementById('share').onclick = async () => {
   const url = shareUrl();
   try { await navigator.clipboard.writeText(url); toast('Link copied. Anyone opening it sees exactly this set-up.'); }
-  catch (e) { prompt('Copy this link:', url); }
+  catch (e) { const ta = document.createElement('textarea'); ta.value = url; document.body.appendChild(ta); ta.select(); const ok = document.execCommand && document.execCommand('copy'); ta.remove(); toast(ok ? 'Link copied.' : 'Could not copy. The link is in the address bar.'); if (!ok) location.hash = url.slice(url.indexOf('#')); }
 };
-document.getElementById('reset').onclick = () => { if (!confirm('Reset everything to the factory defaults?')) return; state = defaults(); init(); toast('Reset to defaults'); };
+// Two-click reset: no confirm() dialog, which sandboxed frames silently block.
+const resetBtn = document.getElementById('reset'); let resetArmed = null;
+resetBtn.onclick = () => {
+  if (resetArmed) { clearTimeout(resetArmed); resetArmed = null; resetBtn.textContent = 'Reset'; resetBtn.classList.remove('danger'); state = defaults(); init(); toast('Reset to factory defaults'); return; }
+  resetBtn.textContent = 'Click again to reset'; resetBtn.classList.add('danger');
+  resetArmed = setTimeout(() => { resetArmed = null; resetBtn.textContent = 'Reset'; resetBtn.classList.remove('danger'); }, 3000);
+};
 let toastTimer = null;
 function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2400); }
 

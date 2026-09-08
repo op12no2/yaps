@@ -19,7 +19,7 @@ The left-hand panel holds the inputs. The chart fills the rest of the screen.
 
 - **Years ahead** (top bar) is a slider from 10 to 200 years.
 - **Copy share link** puts your entire set-up into the page address and copies it. Anyone who opens that link sees exactly what you see.
-- **Reset** throws away your changes and goes back to the factory defaults.
+- **Reset** throws away your changes and goes back to the factory defaults. Click it twice: the first click arms it for three seconds, the second does it.
 
 ## Reading the chart
 
