@@ -129,13 +129,14 @@ const FEMALE_SHARE = 0.49;
 
 // Starting shapes for the age profile graph: relative people per year of age at ages
 // 0, 15, 30, 45, 58, 70, 85, 100. Balanced is roughly the UK in the 2020s (baby-boom bump near 58).
-const PYR_AGES = [0, 15, 30, 45, 58, 70, 85, 100];
+const AGE_MAX = 150;         // right-hand end of the age profile graph
+const PYR_AGES = [0, 15, 30, 45, 58, 70, 85, 100, 150];
 const PROFILES = {
-  young:    { label: 'Young',    v: [2.8, 2.4, 1.6, 1.0, 0.6, 0.3, 0.1, 0.0] },
-  balanced: { label: 'Balanced', v: [0.95, 1.2, 1.35, 1.25, 1.4, 0.95, 0.5, 0.0] },
-  older:    { label: 'Older',    v: [0.65, 0.85, 1.0, 1.35, 1.2, 1.4, 0.7, 0.05] },
+  young:    { label: 'Young',    v: [2.8, 2.4, 1.6, 1.0, 0.6, 0.3, 0.1, 0.0, 0.0] },
+  balanced: { label: 'Balanced', v: [0.95, 1.2, 1.35, 1.25, 1.4, 0.95, 0.5, 0.0, 0.0] },
+  older:    { label: 'Older',    v: [0.65, 0.85, 1.0, 1.35, 1.2, 1.4, 0.7, 0.05, 0.0] },
 };
-const profileShape = k => PYR_AGES.map((a, i) => ({ t: a / 100, v: PROFILES[k].v[i] }));
+const profileShape = k => PYR_AGES.map((a, i) => ({ t: a / AGE_MAX, v: PROFILES[k].v[i] }));
 
 // Curve types: what the small editors edit. min/max are display bounds.
 const CURVES = {
@@ -146,7 +147,7 @@ const CURVES = {
           fmt: v => v.toFixed(0) },
   work: { title: 'Start of working age', unit: 'years old', min: 10, max: 30, ref: null,
           fmt: v => v.toFixed(0) },
-  retire: { title: 'Retirement age', unit: 'years old', min: 40, max: 100, ref: null,
+  retire: { title: 'Retirement age', unit: 'years old', min: 40, max: 120, ref: null,
           fmt: v => v.toFixed(0) },
   mig:  { title: 'Net migration', unit: 'people a year', min: null, max: null, ref: 0, refLabel: '',
           fmt: v => (v > 0 ? '+' : v < 0 ? '−' : '') + fmtNum(Math.abs(v)) },
@@ -224,7 +225,7 @@ const MIG_SHAPE = (() => { const f = new Float64Array(AGES); let s = 0; for (let
 // is scaled to the population slider.
 function pyramidFromCurve(pts, total) {
   const f = interpolator(pts), n = new Float64Array(AGES); let s = 0;
-  for (let a = 0; a < AGES; a++) { n[a] = a <= 100 ? Math.max(0, f(a / 100)) : n[100] * Math.exp(-0.35 * (a - 100)); s += n[a]; }
+  for (let a = 0; a < AGES; a++) { n[a] = a <= AGE_MAX ? Math.max(0, f(a / AGE_MAX)) : n[AGE_MAX] * Math.exp(-0.35 * (a - AGE_MAX)); s += n[a]; }
   if (s <= 0) { n[0] = 1; s = 1; }
   for (let a = 0; a < AGES; a++) n[a] *= total / s;
   return n;
@@ -274,7 +275,7 @@ function simulate(st) {
 
 // ---------- state ----------
 const defaults = () => ({
-  horizon: 75, year0: new Date().getFullYear(), metric: 'pop', pop: 70e6,
+  horizon: 75, year0: new Date().getFullYear(), metric: 'pop', pop: 70e6, ageMax: AGE_MAX,
   pyr: profileShape('balanced'),
   fert: [{ t: 0, v: 1.6 }, { t: 1, v: 1.6 }],
   life: [{ t: 0, v: 82 }, { t: 1, v: 82 }],
@@ -292,6 +293,8 @@ function valid(s) {
   if (!isFinite(s.year0)) s.year0 = new Date().getFullYear();
   if (!Array.isArray(s.work)) s.work = defaults().work;
   if (!Array.isArray(s.pyr)) s.pyr = profileShape(s.profile in PROFILES ? s.profile : 'balanced');
+  else if (s.ageMax !== AGE_MAX) { const old = s.ageMax || 100; s.pyr = s.pyr.map(p => ({ t: p.t * old / AGE_MAX, v: p.v })).filter(p => p.t < 0.98); s.pyr.push({ t: 1, v: 0 }); }
+  s.ageMax = AGE_MAX;
   return Array.isArray(s.retire);
 }
 function load() {
@@ -370,8 +373,8 @@ class CurveEditor {
     if (t - pts[i - 1].t < 0.02 || pts[i].t - t < 0.02) return;
     pts.splice(i, 0, { t, v: this.snap(v) }); this.draw(); this.onChange();
   }
-  curveSum(pts) { const f = interpolator(pts); let s = 0; for (let a = 0; a <= 100; a++) s += Math.max(0, f(a / 100)); return s; }
-  ageLabel(p) { const share = p.v / Math.max(1e-9, this.curveSum(this.pts)); return `${(share * 100).toFixed(1)}% aged ${Math.round(p.t * 100)}`; }
+  curveSum(pts) { const f = interpolator(pts); let s = 0; for (let a = 0; a <= AGE_MAX; a++) s += Math.max(0, f(a / AGE_MAX)); return s; }
+  ageLabel(p) { const share = p.v / Math.max(1e-9, this.curveSum(this.pts)); return `${(share * 100).toFixed(1)}% aged ${Math.round(p.t * AGE_MAX)}`; }
   snap(v) { if (this.key === 'pyr') return Math.round(v * 20) / 20; if (this.key === 'fert') return Math.round(v * 20) / 20; if (this.key === 'life') return Math.round(v * 2) / 2; if (this.key === 'retire' || this.key === 'work') return Math.round(v); const s = niceStep(this.bounds()[1], 40); return Math.round(v / s) * s; }
   draw() {
     const cv = this.cv, dpr = window.devicePixelRatio || 1, g = this.geom(); if (g.w === 0) return;
@@ -386,8 +389,8 @@ class CurveEditor {
       if (this.spec.refLabel) { c.textAlign = 'right'; c.fillText(this.spec.refLabel, g.x1 - 2, y - 7); }
     }
     const ages = this.spec.ages;
-    c.textAlign = 'left'; c.fillText(ages ? 'age 0' : String(state.year0), g.x0, g.y1 + 10); c.textAlign = 'right'; c.fillText(ages ? 'age 100' : String(state.year0 + state.horizon), g.x1, g.y1 + 10);
-    if (ages) { c.save(); c.translate(g.x0 - 14, (g.y0 + g.y1) / 2); c.rotate(-Math.PI / 2); c.textAlign = 'center'; c.fillText('fewer ← → more', 0, 0); c.restore(); c.textAlign = 'center'; for (const a of [25, 50, 75]) { const x = Math.round(this.toPx(a / 100, 0, g, b)[0]) + 0.5; c.strokeStyle = css('--grid'); c.beginPath(); c.moveTo(x, g.y0); c.lineTo(x, g.y1); c.stroke(); c.fillText(String(a), x, g.y1 + 10); } }
+    c.textAlign = 'left'; c.fillText(ages ? 'age 0' : String(state.year0), g.x0, g.y1 + 10); c.textAlign = 'right'; c.fillText(ages ? 'age ' + AGE_MAX : String(state.year0 + state.horizon), g.x1, g.y1 + 10);
+    if (ages) { c.save(); c.translate(g.x0 - 14, (g.y0 + g.y1) / 2); c.rotate(-Math.PI / 2); c.textAlign = 'center'; c.fillText('fewer ← → more', 0, 0); c.restore(); c.textAlign = 'center'; for (const a of [50, 100]) { const x = Math.round(this.toPx(a / AGE_MAX, 0, g, b)[0]) + 0.5; c.strokeStyle = css('--grid'); c.beginPath(); c.moveTo(x, g.y0); c.lineTo(x, g.y1); c.stroke(); c.fillText(String(a), x, g.y1 + 10); } }
     const f = interpolator(pts); c.strokeStyle = col; c.lineWidth = 2; c.lineJoin = 'round'; c.lineCap = 'round'; c.beginPath();
     const N = Math.max(40, Math.round(g.x1 - g.x0) >> 1);
     for (let i = 0; i <= N; i++) { const t = i / N, [x, y] = this.toPx(t, clamp(f(t), b[0], b[1]), g, b); i ? c.lineTo(x, y) : c.moveTo(x, y); }

@@ -39,12 +39,12 @@ Hover anywhere on the chart for the exact values in that year. The active chip i
 At the top of the panel is a one-line summary: population at the start, population at the end of the projection, the percentage change, how the median age moves, and where the MVP ratio ends up.
 
 - **Population.** A slider from 100 thousand to 12 billion. It moves in proportional steps, so a small town and the whole planet are both within reach without the low end being cramped.
-- **Age profile.** A graph of how many people there are at each age at the start, from 0 to 100 along the bottom. Drag it into shape, or click Young, Balanced or Older to load a starting shape. Balanced is roughly the UK, with its baby-boom bump in the late fifties. Young is a country like Nigeria, Older is a country like Japan. It matters a lot: an older population keeps shrinking for decades even if fertility recovers, because there are fewer people of parenting age.
+- **Age profile.** A graph of how many people there are at each age at the start, from 0 to 150 along the bottom. Drag it into shape, or click Young, Balanced or Older to load a starting shape. Balanced is roughly the UK, with its baby-boom bump in the late fifties. Young is a country like Nigeria, Older is a country like Japan. It matters a lot: an older population keeps shrinking for decades even if fertility recovers, because there are fewer people of parenting age.
 - **Five more small graphs** for fertility, life expectancy, start of working age, retirement age and net migration, each running from the start year to the end of the projection. See the next section.
 
 ## The small graphs
 
-All six inputs use the same kind of graph. The first, the age profile, runs across ages 0 to 100 and its height is how many people there are at that age. The other five run from the start year (left edge) to the last year of the projection (right edge), and their height at any year is the value used for that year. Either way the line *is* the setting.
+All six inputs use the same kind of graph. The first, the age profile, runs across ages 0 to 150 and its height is how many people there are at that age. The other five run from the start year (left edge) to the last year of the projection (right edge), and their height at any year is the value used for that year. Either way the line *is* the setting.
 
 Every graph starts flat, with a point at each end.
 
@@ -77,7 +77,7 @@ The age at which people stop counting as children and start counting as working-
 
 ### Retirement age
 
-The age at which people stop counting as working-age and start counting as retired. It feeds the "share past retirement age" view and the MVP ratio. It is a graph rather than a single number because the two can move together: if medicine keeps people productive for longer, retirement can drift upwards over the decades and the MVP ratio settles back down. The graph runs from 40 to 100.
+The age at which people stop counting as working-age and start counting as retired. It feeds the "share past retirement age" view and the MVP ratio. It is a graph rather than a single number because the two can move together: if medicine keeps people productive for longer, retirement can drift upwards over the decades and the MVP ratio settles back down. The graph runs from 40 to 120.
 
 ### Net migration
 
@@ -91,7 +91,7 @@ The simulator does not use a single growth rate. The population is tracked as 17
 2. Births are calculated from the fertility rate for that year, spread over women aged 15 to 49 with a typical age pattern that peaks in the late twenties. Half of each age group is assumed to be female.
 3. Net migrants are added or removed with a typical migrant age profile, concentrated in young adults.
 
-The starting age structure comes straight from the age profile graph, scaled to the population slider, with a short tail beyond age 100.
+The starting age structure comes straight from the age profile graph, scaled to the population slider, with a short tail beyond age 150.
 
 Migrants join the same age groups as everyone else, so from the year they arrive they have the same fertility and mortality as the existing population.
 
