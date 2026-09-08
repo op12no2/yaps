@@ -16,6 +16,7 @@
   --shadow:0 1px 2px rgba(0,0,0,.4), 0 4px 16px rgba(0,0,0,.3);
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{height:100%}
 body{margin:0;background:var(--page);color:var(--ink);font:14px/1.45 "IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;overflow:hidden}
 button,input,select{font:inherit;color:inherit}
@@ -44,6 +45,8 @@ header input[type=range]{width:140px}
 .btn{background:var(--surface-2);border:1px solid transparent;border-radius:6px;padding:6px 12px;cursor:pointer;white-space:nowrap}
 .btn:hover{background:var(--surface-3)}
 .btn.danger{background:var(--danger);color:#fff}
+.btn.primary{background:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.1)}
 
 main{display:grid;grid-template-columns:380px 1fr;min-height:0}
 #sidebar{border-right:1px solid var(--hair);overflow-y:auto;padding:14px 16px 20px;display:flex;flex-direction:column;gap:16px;background:var(--surface)}
@@ -51,6 +54,12 @@ main{display:grid;grid-template-columns:380px 1fr;min-height:0}
 #summary b{color:var(--ink);font-weight:500}
 #chartArea{display:grid;grid-template-rows:auto 1fr;min-height:0;padding:12px 16px 16px;gap:10px}
 #legend{display:flex;flex-wrap:wrap;gap:6px 8px}
+#focusBar{display:flex;align-items:center;gap:14px;min-height:31px}
+#focusBar .t{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap}
+#focusBar .v{font-size:13px;color:var(--ink-2)}
+#focusBar .v b{color:var(--ink);font-weight:500}
+.curve.big{position:absolute;inset:0;width:100%;height:100%;border-radius:10px}
+
 .key{display:flex;align-items:center;gap:7px;padding:5px 10px;border-radius:999px;background:transparent;border:1px solid var(--hair);cursor:pointer;user-select:none;font-size:13px;color:var(--ink-2)}
 .key:hover{background:var(--surface-2);color:var(--ink)}
 .key .sw{width:12px;height:12px;border-radius:50%;background:var(--c);flex:none}
@@ -69,6 +78,9 @@ main{display:grid;grid-template-columns:380px 1fr;min-height:0}
 .prop{display:flex;flex-direction:column;gap:6px}
 .prop .lab{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
 .prop .lab .t{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--ink);white-space:nowrap}
+.prop .lab .t.link{cursor:pointer;border-bottom:1px dotted transparent}
+.prop .lab .t.link:hover{border-bottom-color:var(--ink-2)}
+.prop.focused .lab .t{color:var(--accent)}
 .section{border-top:1px solid var(--hair);padding-top:14px;margin-top:16px}
 .prop .lab .v{font-size:12px;color:var(--ink-2);text-align:right}
 .prop .lab .v b{color:var(--ink);font-weight:500}
@@ -109,11 +121,12 @@ main{display:grid;grid-template-columns:380px 1fr;min-height:0}
         <input id="popIn" type="range" min="0" max="1000" step="1" aria-label="Population">
       </div>
       <div id="curves"></div>
-      <p class="hint">Every change updates the chart straight away. The first graph is the shape of the population by age at the start; the rest shape how each value changes over the years that follow. Drag the points. Double-click a line to add a point, and drag a point off its graph to remove it.</p>
+      <p class="hint">Every change updates the chart straight away. The first graph is the shape of the population by age at the start; the rest shape how each value changes over the years that follow. Drag the points. Double-click a line to add a point, and drag a point off its graph to remove it. Click a graph's heading to open it full size.</p>
     </aside>
     <section id="chartArea">
       <div id="legend"></div>
-      <div id="chartWrap"><canvas id="chart"></canvas><div id="tip"></div></div>
+      <div id="focusBar" hidden><span class="t" id="focusTitle"></span><span class="v" id="focusSummary"></span><span class="spacer"></span><span class="hint">Chart pauses while you edit</span><button class="btn primary" id="focusDone">Done</button></div>
+      <div id="chartWrap"><canvas id="chart"></canvas><div id="tip"></div><canvas id="focusCanvas" class="curve big" hidden></canvas></div>
     </section>
   </main>
 </div>
@@ -312,10 +325,11 @@ function redrawEditors() { Object.values(editors).forEach(e => e.draw()); }
 
 // ---------- curve editor ----------
 class CurveEditor {
-  constructor(key, canvas, onChange) {
-    this.key = key; this.spec = CURVES[key]; this.cv = canvas; this.onChange = onChange;
+  constructor(key, canvas, onChange, big) {
+    this.key = key; this.spec = CURVES[key]; this.cv = canvas; this.onChange = onChange; this.big = !!big;
     this.ctx = canvas.getContext('2d');
-    this.pad = { l: 44, r: 12, t: 10, b: 18 };
+    this.pad = big ? { l: 72, r: 32, t: 28, b: 34 } : { l: 44, r: 12, t: 10, b: 18 };
+    this.r = big ? 7 : 4.5;
     this.drag = null; this.hover = -1;
     canvas.addEventListener('pointerdown', e => this.down(e));
     canvas.addEventListener('pointermove', e => this.move(e));
@@ -339,7 +353,7 @@ class CurveEditor {
   fromPx(x, y, g, b) { return [(x - g.x0) / (g.x1 - g.x0), b[0] + (g.y1 - y) / (g.y1 - g.y0) * (b[1] - b[0])]; }
   local(e) { const r = this.cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }
   nearest(x, y) {
-    const g = this.geom(), b = this.bounds(); let best = -1, bd = 14;
+    const g = this.geom(), b = this.bounds(); let best = -1, bd = this.big ? 22 : 14;
     this.pts.forEach((p, i) => { const [px, py] = this.toPx(p.t, p.v, g, b); const d = Math.hypot(px - x, py - y); if (d < bd) { bd = d; best = i; } });
     return best;
   }
@@ -381,7 +395,8 @@ class CurveEditor {
     if (cv.width !== Math.round(g.w * dpr) || cv.height !== Math.round(g.h * dpr)) { cv.width = Math.round(g.w * dpr); cv.height = Math.round(g.h * dpr); }
     const c = this.ctx; c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, g.w, g.h);
     const b = this.bounds(), col = css('--accent'), pts = this.pts;
-    c.font = '10px "IBM Plex Mono", ui-monospace, monospace'; c.textBaseline = 'middle';
+    const mono = this.big ? '12px "IBM Plex Mono", ui-monospace, monospace' : '10px "IBM Plex Mono", ui-monospace, monospace';
+    c.font = mono; c.textBaseline = 'middle';
     c.strokeStyle = css('--grid'); c.lineWidth = 1; c.fillStyle = css('--muted'); c.textAlign = 'right';
     for (const f of [0, 0.5, 1]) { const y = Math.round(g.y1 - f * (g.y1 - g.y0)) + 0.5; c.beginPath(); c.moveTo(g.x0, y); c.lineTo(g.x1, y); c.stroke(); if (!this.spec.ages) c.fillText(this.spec.fmt(b[0] + f * (b[1] - b[0])), g.x0 - 6, y); }
     if (this.spec.ref !== null && this.spec.ref > b[0] && this.spec.ref < b[1]) {
@@ -389,22 +404,23 @@ class CurveEditor {
       if (this.spec.refLabel) { c.textAlign = 'right'; c.fillText(this.spec.refLabel, g.x1 - 2, y - 7); }
     }
     const ages = this.spec.ages;
-    c.textAlign = 'left'; c.fillText(ages ? 'age 0' : String(state.year0), g.x0, g.y1 + 10); c.textAlign = 'right'; c.fillText(ages ? 'age ' + AGE_MAX : String(state.year0 + state.horizon), g.x1, g.y1 + 10);
-    if (ages) { c.save(); c.translate(g.x0 - 14, (g.y0 + g.y1) / 2); c.rotate(-Math.PI / 2); c.textAlign = 'center'; c.fillText('fewer ← → more', 0, 0); c.restore(); c.textAlign = 'center'; for (const a of [50, 100]) { const x = Math.round(this.toPx(a / AGE_MAX, 0, g, b)[0]) + 0.5; c.strokeStyle = css('--grid'); c.beginPath(); c.moveTo(x, g.y0); c.lineTo(x, g.y1); c.stroke(); c.fillText(String(a), x, g.y1 + 10); } }
+    c.textAlign = 'left'; const xl = g.y1 + (this.big ? 16 : 10);
+    c.fillText(ages ? 'age 0' : String(state.year0), g.x0, xl); c.textAlign = 'right'; c.fillText(ages ? 'age ' + AGE_MAX : String(state.year0 + state.horizon), g.x1, xl);
+    if (ages) { c.save(); c.translate(g.x0 - 14, (g.y0 + g.y1) / 2); c.rotate(-Math.PI / 2); c.textAlign = 'center'; c.fillText('fewer ← → more', 0, 0); c.restore(); c.textAlign = 'center'; for (const a of [50, 100]) { const x = Math.round(this.toPx(a / AGE_MAX, 0, g, b)[0]) + 0.5; c.strokeStyle = css('--grid'); c.beginPath(); c.moveTo(x, g.y0); c.lineTo(x, g.y1); c.stroke(); c.fillText(String(a), x, xl); } }
     const f = interpolator(pts); c.strokeStyle = col; c.lineWidth = 2; c.lineJoin = 'round'; c.lineCap = 'round'; c.beginPath();
     const N = Math.max(40, Math.round(g.x1 - g.x0) >> 1);
     for (let i = 0; i <= N; i++) { const t = i / N, [x, y] = this.toPx(t, clamp(f(t), b[0], b[1]), g, b); i ? c.lineTo(x, y) : c.moveTo(x, y); }
     c.stroke();
     pts.forEach((p, i) => {
       const [x, y] = this.toPx(p.t, p.v, g, b); const removing = this.drag && this.drag.i === i && this.drag.removed;
-      c.beginPath(); c.arc(x, y, 6, 0, Math.PI * 2); c.fillStyle = css('--surface'); c.fill();
-      c.beginPath(); c.arc(x, y, 4.5, 0, Math.PI * 2); c.fillStyle = removing ? css('--danger') : col; c.fill();
+      c.beginPath(); c.arc(x, y, this.r + 1.5, 0, Math.PI * 2); c.fillStyle = css('--surface'); c.fill();
+      c.beginPath(); c.arc(x, y, this.r, 0, Math.PI * 2); c.fillStyle = removing ? css('--danger') : col; c.fill();
       if (i === this.hover || (this.drag && this.drag.i === i)) {
         const label = removing ? 'remove' : ages ? this.ageLabel(p) : this.spec.fmt(p.v) + ' in ' + Math.round(state.year0 + p.t * state.horizon);
-        c.font = '500 11px "IBM Plex Sans", system-ui, sans-serif'; c.textAlign = x > (g.x0 + g.x1) / 2 ? 'right' : 'left';
+        c.font = this.big ? '500 13px "IBM Plex Sans", system-ui, sans-serif' : '500 11px "IBM Plex Sans", system-ui, sans-serif'; c.textAlign = x > (g.x0 + g.x1) / 2 ? 'right' : 'left';
         const tx = x > (g.x0 + g.x1) / 2 ? x - 10 : x + 10, ty = y < g.y0 + 14 ? y + 14 : y - 12;
         const w = c.measureText(label).width; c.fillStyle = css('--surface'); c.fillRect(c.textAlign === 'right' ? tx - w - 4 : tx - 4, ty - 8, w + 8, 16);
-        c.fillStyle = css('--ink'); c.fillText(label, tx, ty); c.font = '10px "IBM Plex Mono", ui-monospace, monospace';
+        c.fillStyle = css('--ink'); c.fillText(label, tx, ty); c.font = mono;
       }
     });
   }
@@ -441,15 +457,44 @@ function buildSidebar() {
     </div>`).join('');
   for (const k of Object.keys(CURVES)) {
     const wrap = curvesEl.querySelector(`[data-curve="${k}"]`), cs = wrap.querySelector('[data-cs]');
-    const ed = new CurveEditor(k, wrap.querySelector('canvas'), () => { cs.innerHTML = curveSummary(k); if (k === 'pyr') markProfile(); else if (editors.pyr) { editors.pyr.draw(); curvesEl.querySelector('[data-curve="pyr"] [data-cs]').innerHTML = curveSummary('pyr'); } recompute(); });
+    const ed = new CurveEditor(k, wrap.querySelector('canvas'), () => curveChanged(k));
+    wrap.querySelector('.t').classList.add('link'); wrap.querySelector('.t').title = 'Open full size'; wrap.querySelector('.t').onclick = () => enterFocus(k);
     cs.innerHTML = curveSummary(k);
     editors[k] = ed;
   }
   const seg = document.getElementById('profileSeg');
-  seg.onclick = e => { const b = e.target.closest('button'); if (!b) return; state.pyr = profileShape(b.dataset.k); editors.pyr.draw(); markProfile(); curvesEl.querySelector('[data-curve="pyr"] [data-cs]').innerHTML = curveSummary('pyr'); recompute(); };
+  seg.onclick = e => { const b = e.target.closest('button'); if (!b) return; state.pyr = profileShape(b.dataset.k); editors.pyr.draw(); curveChanged('pyr'); };
   markProfile();
   redrawEditors();
 }
+// A curve moved (in the panel or full size). While a graph is open full size the
+// chart pauses; one recalculation runs when it closes.
+function curveChanged(k) {
+  curvesEl.querySelector(`[data-curve="${k}"] [data-cs]`).innerHTML = curveSummary(k);
+  if (k === 'pyr') markProfile(); else if (editors.pyr) { editors.pyr.draw(); curvesEl.querySelector('[data-curve="pyr"] [data-cs]').innerHTML = curveSummary('pyr'); }
+  if (focus) { focusSummary.innerHTML = curveSummary(k); if (focus.key === k) editors[k].draw(); else focus.ed.draw(); focus.dirty = true; return; }
+  recompute();
+}
+// ---------- full-size editing ----------
+const focusBar = document.getElementById('focusBar'), focusTitle = document.getElementById('focusTitle'), focusSummary = document.getElementById('focusSummary'), focusCanvas = document.getElementById('focusCanvas');
+let focus = null;
+function enterFocus(k) {
+  if (focus) exitFocus();
+  focus = { key: k, dirty: false, ed: new CurveEditor(k, focusCanvas, () => curveChanged(k), true) };
+  focusTitle.textContent = CURVES[k].title; focusSummary.innerHTML = curveSummary(k);
+  legendEl.hidden = true; focusBar.hidden = false; chart.hidden = true; tip.style.display = 'none'; focusCanvas.hidden = false;
+  curvesEl.querySelectorAll('[data-curve]').forEach(w => w.classList.toggle('focused', w.dataset.curve === k));
+  focus.ed.draw();
+}
+function exitFocus() {
+  if (!focus) return;
+  const dirty = focus.dirty; focus = null;
+  focusCanvas.hidden = true; focusBar.hidden = true; chart.hidden = false; legendEl.hidden = false;
+  curvesEl.querySelectorAll('[data-curve]').forEach(w => w.classList.remove('focused'));
+  redrawEditors(); if (dirty) recompute(); else drawChart();
+}
+document.getElementById('focusDone').onclick = exitFocus;
+document.addEventListener('keydown', e => { if (e.key === 'Escape') exitFocus(); });
 // Highlight whichever preset the pyramid currently matches, if any
 function markProfile() {
   const cur = JSON.stringify(state.pyr);
@@ -564,6 +609,7 @@ let toastTimer = null;
 function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2400); }
 
 function init() {
+  exitFocus();
   horizonEl.value = state.horizon; horizonVal.textContent = state.horizon; year0El.value = state.year0; year0Val.textContent = state.year0;
   buildSidebar(); renderLegend(); recompute();
 }

@@ -55,6 +55,8 @@ Every graph starts flat, with a point at each end.
 
 The curve between points is smooth and never overshoots, so two or three points are enough for any realistic shape: a steady decline, a fall that levels off, a bump that fades.
 
+**Click a graph's heading**, for example RETIREMENT AGE, and that graph opens full size in the main area for easier editing. The chart pauses while it is open. Press Done, or Escape, to go back, and the projection recalculates once with your changes.
+
 Above each graph is a sentence describing the current shape, for example "4.5 in 2026, falling to 2.3 by 2101". If the sentence says what you meant, the graph is right.
 
 ### Age profile
