@@ -339,6 +339,7 @@ class CurveEditor {
     canvas.addEventListener('dblclick', e => this.add(e));
     new ResizeObserver(() => this.draw()).observe(canvas);
   }
+  use(key) { this.key = key; this.spec = CURVES[key]; this.drag = null; this.hover = -1; }
   get pts() { return state[this.key]; }
   bounds() {
     if (this.spec.min !== null) return [this.spec.min, this.spec.max];
@@ -478,9 +479,11 @@ function curveChanged(k) {
 // ---------- full-size editing ----------
 const focusBar = document.getElementById('focusBar'), focusTitle = document.getElementById('focusTitle'), focusSummary = document.getElementById('focusSummary'), focusCanvas = document.getElementById('focusCanvas');
 let focus = null;
+const bigEditor = new CurveEditor('fert', focusCanvas, () => curveChanged(bigEditor.key), true);
 function enterFocus(k) {
   if (focus) exitFocus();
-  focus = { key: k, dirty: false, ed: new CurveEditor(k, focusCanvas, () => curveChanged(k), true) };
+  bigEditor.use(k);
+  focus = { key: k, dirty: false, ed: bigEditor };
   focusTitle.textContent = CURVES[k].title; focusSummary.innerHTML = curveSummary(k);
   legendEl.hidden = true; focusBar.hidden = false; chart.hidden = true; tip.style.display = 'none'; focusCanvas.hidden = false;
   curvesEl.querySelectorAll('[data-curve]').forEach(w => w.classList.toggle('focused', w.dataset.curve === k));
