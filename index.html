@@ -526,7 +526,7 @@ const METRIC = {
   deaths: { label: 'Deaths per year', fmt: fmtNum },
   median: { label: 'Median age', fmt: v => v.toFixed(1) },
   over65: { label: 'Share aged 65+', fmt: v => (v * 100).toFixed(0) + '%' },
-  mvp: { label: 'MVP ratio: people aged 65+ for every person aged 17 to 64', fmt: v => v.toFixed(2), ref: 1, refLabel: '1.00 = MVP threshold, one pensioner per working-age adult' },
+  mvp: { label: 'MVP ratio: people aged 65+ for every person aged 17 to 64', fmt: v => v.toFixed(2), ref: 1, refLabel: '1.00 = MVP threshold, one pensioner per working-age adult. Higher is worse.' },
 };
 let hoverX = null, chartGeom = null;
 function drawChart() {

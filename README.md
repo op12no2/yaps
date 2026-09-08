@@ -83,7 +83,7 @@ The results are in the right ballpark. Japan, on its example settings, lands clo
 
 Minimum viable population. In nature it is the size below which a population is effectively extinct even though individuals remain. For a country, the suggestion here is that the limit is not size but shape: the number of people aged 65 and over for every person of working age, taken as 17 to 64.
 
-Choose **MVP ratio** in the Show menu to chart it. A value of 0.30 means three pensioners for every ten working-age adults. The chart draws a reference line at 1.00, one pensioner per working-age adult, as the proposed threshold beyond which the fabric of society is assumed to give way: the cost of supporting the old falls on too few, debt mounts, and the people who can leave do. Japan today is around 0.55 and no country has yet recorded 1.00, so the line marks territory the model can reach but the real world has not.
+Choose **MVP ratio** in the Show menu to chart it. A value of 0.30 means three pensioners for every ten working-age adults. Higher is worse: the line climbs as a population ages, so a line rising towards the threshold is heading for trouble and a low, flat line is healthy. This is the reverse of the biological version, where a population falls down to its minimum viable size. The chart draws a reference line at 1.00, one pensioner per working-age adult, as the proposed threshold beyond which the fabric of society is assumed to give way: the cost of supporting the old falls on too few, debt mounts, and the people who can leave do. Japan today is around 0.55 and no country has yet recorded 1.00, so the line marks territory the model can reach but the real world has not.
 
 Two things to bear in mind when reading it:
 
