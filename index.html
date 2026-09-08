@@ -103,11 +103,11 @@ main{display:grid;grid-template-columns:380px 1fr;min-height:0}
     <aside id="sidebar">
       <div id="summary"></div>
       <div class="prop">
-        <div class="lab"><span class="t">Population today</span><span class="v"><b id="popVal" class="mono"></b> people</span></div>
-        <input id="popIn" type="range" min="0" max="1000" step="1" aria-label="Population today">
+        <div class="lab"><span class="t">Population</span><span class="v"><b id="popVal" class="mono"></b> people</span></div>
+        <input id="popIn" type="range" min="0" max="1000" step="1" aria-label="Population">
       </div>
       <div id="curves"></div>
-      <p class="hint">Every change updates the chart straight away. The first graph is the shape of the population by age today; the rest shape how each value changes over the years ahead. Drag the points. Double-click a line to add a point, and drag a point off its graph to remove it.</p>
+      <p class="hint">Every change updates the chart straight away. The first graph is the shape of the population by age at the start; the rest shape how each value changes over the years that follow. Drag the points. Double-click a line to add a point, and drag a point off its graph to remove it.</p>
     </aside>
     <section id="chartArea">
       <div id="legend"></div>
@@ -122,12 +122,11 @@ main{display:grid;grid-template-columns:380px 1fr;min-height:0}
 'use strict';
 
 // ---------- constants ----------
-const YEAR0 = new Date().getFullYear();
 const AGES = 171;            // 0..170, last bin is 170+ (room for a life expectancy of 150)
 const FEMALE_SHARE = 0.49;
 
 // Starting shapes for the age profile graph: relative people per year of age at ages
-// 0, 15, 30, 45, 58, 70, 85, 100. Balanced is roughly the UK today (baby-boom bump near 58).
+// 0, 15, 30, 45, 58, 70, 85, 100. Balanced is roughly the UK in the 2020s (baby-boom bump near 58).
 const PYR_AGES = [0, 15, 30, 45, 58, 70, 85, 100];
 const PROFILES = {
   young:    { label: 'Young',    v: [2.8, 2.4, 1.6, 1.0, 0.6, 0.3, 0.1, 0.0] },
@@ -138,7 +137,7 @@ const profileShape = k => PYR_AGES.map((a, i) => ({ t: a / 100, v: PROFILES[k].v
 
 // Curve types: what the small editors edit. min/max are display bounds.
 const CURVES = {
-  pyr:  { title: 'Age profile today', unit: '', min: 0, max: 3, ref: null, ages: true, fmt: v => v.toFixed(1) },
+  pyr:  { title: 'Age profile', unit: '', min: 0, max: 3, ref: null, ages: true, fmt: v => v.toFixed(1) },
   fert: { title: 'Fertility', unit: 'children per woman', min: 0, max: 6, ref: 2.1, refLabel: 'replacement 2.1',
           fmt: v => v.toFixed(1) },
   life: { title: 'Life expectancy', unit: 'years', min: 40, max: 150, ref: null,
@@ -384,7 +383,7 @@ class CurveEditor {
       if (this.spec.refLabel) { c.textAlign = 'right'; c.fillText(this.spec.refLabel, g.x1 - 2, y - 7); }
     }
     const ages = this.spec.ages;
-    c.textAlign = 'left'; c.fillText(ages ? 'age 0' : String(YEAR0), g.x0, g.y1 + 10); c.textAlign = 'right'; c.fillText(ages ? 'age 100' : String(YEAR0 + state.horizon), g.x1, g.y1 + 10);
+    c.textAlign = 'left'; c.fillText(ages ? 'age 0' : 'year 0', g.x0, g.y1 + 10); c.textAlign = 'right'; c.fillText(ages ? 'age 100' : 'year ' + state.horizon, g.x1, g.y1 + 10);
     if (ages) { c.save(); c.translate(g.x0 - 14, (g.y0 + g.y1) / 2); c.rotate(-Math.PI / 2); c.textAlign = 'center'; c.fillText('fewer ← → more', 0, 0); c.restore(); c.textAlign = 'center'; for (const a of [25, 50, 75]) { const x = Math.round(this.toPx(a / 100, 0, g, b)[0]) + 0.5; c.strokeStyle = css('--grid'); c.beginPath(); c.moveTo(x, g.y0); c.lineTo(x, g.y1); c.stroke(); c.fillText(String(a), x, g.y1 + 10); } }
     const f = interpolator(pts); c.strokeStyle = col; c.lineWidth = 2; c.lineJoin = 'round'; c.lineCap = 'round'; c.beginPath();
     const N = Math.max(40, Math.round(g.x1 - g.x0) >> 1);
@@ -395,7 +394,7 @@ class CurveEditor {
       c.beginPath(); c.arc(x, y, 6, 0, Math.PI * 2); c.fillStyle = css('--surface'); c.fill();
       c.beginPath(); c.arc(x, y, 4.5, 0, Math.PI * 2); c.fillStyle = removing ? css('--danger') : col; c.fill();
       if (i === this.hover || (this.drag && this.drag.i === i)) {
-        const label = removing ? 'remove' : ages ? this.ageLabel(p) : this.spec.fmt(p.v) + ' in ' + Math.round(YEAR0 + p.t * state.horizon);
+        const label = removing ? 'remove' : ages ? this.ageLabel(p) : this.spec.fmt(p.v) + ' in year ' + Math.round(p.t * state.horizon);
         c.font = '500 11px "IBM Plex Sans", system-ui, sans-serif'; c.textAlign = x > (g.x0 + g.x1) / 2 ? 'right' : 'left';
         const tx = x > (g.x0 + g.x1) / 2 ? x - 10 : x + 10, ty = y < g.y0 + 14 ? y + 14 : y - 12;
         const w = c.measureText(label).width; c.fillStyle = css('--surface'); c.fillRect(c.textAlign === 'right' ? tx - w - 4 : tx - 4, ty - 8, w + 8, 16);
@@ -414,12 +413,12 @@ function curveSummary(key) {
     for (let a = 0; a < AGES; a++) { if (acc + n[a] >= 0.5) { med = a + (0.5 - acc) / Math.max(n[a], 1e-9); break; } acc += n[a]; }
     return `median age <b>${med.toFixed(0)}</b>, ${(kids * 100).toFixed(0)}% children, ${(old * 100).toFixed(0)}% retired`;
   }
-  const s = CURVES[key], pts = state[key], a = pts[0].v, z = pts[pts.length - 1].v, end = YEAR0 + state.horizon;
+  const s = CURVES[key], pts = state[key], a = pts[0].v, z = pts[pts.length - 1].v, end = 'year ' + state.horizon;
   const ext = pts.reduce((m, p) => Math.abs(p.v - a) > Math.abs(m.v - a) ? p : m, pts[0]);
   const same = (x, y) => s.fmt(x) === s.fmt(y);
   if (same(a, z) && same(ext.v, a)) return `<b>${s.fmt(a)}</b> ${s.unit}, held steady`;
-  if (!same(ext.v, z) && !same(ext.v, a)) return `<b>${s.fmt(a)}</b> now, ${ext.v > a ? 'peaking at' : 'dipping to'} ${s.fmt(ext.v)} around ${Math.round(YEAR0 + ext.t * state.horizon)}, then ${s.fmt(z)} by ${end}`;
-  return `<b>${s.fmt(a)}</b> now, ${z > a ? 'rising' : 'falling'} to <b>${s.fmt(z)}</b> by ${end}`;
+  if (!same(ext.v, z) && !same(ext.v, a)) return `<b>${s.fmt(a)}</b> at the start, ${ext.v > a ? 'peaking at' : 'dipping to'} ${s.fmt(ext.v)} around year ${Math.round(ext.t * state.horizon)}, then ${s.fmt(z)} by ${end}`;
+  return `<b>${s.fmt(a)}</b> at the start, ${z > a ? 'rising' : 'falling'} to <b>${s.fmt(z)}</b> by ${end}`;
 }
 const POP_MIN = 1e5, POP_MAX = 12e9;
 const popFromSlider = t => { const v = POP_MIN * Math.pow(POP_MAX / POP_MIN, t / 1000); const p = Math.pow(10, Math.floor(Math.log10(v)) - 1); return Math.round(v / p) * p; };
@@ -452,8 +451,8 @@ function markProfile() {
 }
 function renderSummary() {
   const r = result; if (!r) return;
-  const a = r.pop[0], z = r.pop[r.pop.length - 1], ch = (z - a) / a, end = YEAR0 + state.horizon, mvp = r.mvp[r.mvp.length - 1];
-  summaryEl.innerHTML = `<b>${fmtNum(a)}</b> people today → <b>${fmtNum(z)}</b> in ${end} (${ch >= 0 ? '+' : '−'}${Math.abs(ch * 100).toFixed(0)}%). Median age ${r.median[0].toFixed(0)} → ${r.median[r.median.length - 1].toFixed(0)}. MVP ratio ${r.mvp[0].toFixed(2)} → <b>${mvp.toFixed(2)}</b>${mvp >= 1 ? ', past the threshold' : ''}.`;
+  const a = r.pop[0], z = r.pop[r.pop.length - 1], ch = (z - a) / a, mvp = r.mvp[r.mvp.length - 1];
+  summaryEl.innerHTML = `<b>${fmtNum(a)}</b> people → <b>${fmtNum(z)}</b> after ${state.horizon} years (${ch >= 0 ? '+' : '−'}${Math.abs(ch * 100).toFixed(0)}%). Median age ${r.median[0].toFixed(0)} → ${r.median[r.median.length - 1].toFixed(0)}. MVP ratio ${r.mvp[0].toFixed(2)} → <b>${mvp.toFixed(2)}</b>${mvp >= 1 ? ', past the threshold' : ''}.`;
   curvesEl.querySelectorAll('[data-curve]').forEach(w => { w.querySelector('[data-cs]').innerHTML = curveSummary(w.dataset.curve); });
 }
 popIn.addEventListener('input', () => { state.pop = popFromSlider(+popIn.value); popVal.textContent = fmtNum(state.pop); recompute(); redrawEditors(); });
@@ -498,8 +497,8 @@ function drawChart() {
   for (let v = 0; v <= ymax + 1e-9; v += step) { const y = Math.round(Y(v)) + 0.5; c.beginPath(); c.moveTo(x0, y); c.lineTo(x1, y); c.stroke(); c.textAlign = 'right'; c.fillText(mt.fmt(v), x0 - 8, y); }
   c.strokeStyle = css('--axis'); c.beginPath(); c.moveTo(x0, Math.round(y1) + 0.5); c.lineTo(x1, Math.round(y1) + 0.5); c.stroke();
   const xs = niceStep(N, 8); c.textAlign = 'center'; c.textBaseline = 'top';
-  for (let i = 0; i <= N; i += xs) if (i === N || N - i >= xs / 2) c.fillText(String(YEAR0 + i), X(i), y1 + 8);
-  if (N % xs) c.fillText(String(YEAR0 + N), X(N), y1 + 8);
+  for (let i = 0; i <= N; i += xs) if (i === N || N - i >= xs / 2) c.fillText(i === 0 ? 'year 0' : String(i), X(i), y1 + 8);
+  if (N % xs) c.fillText(String(N), X(N), y1 + 8);
   // axis title, plus an inline key when more than one line is drawn
   c.textAlign = 'left'; c.textBaseline = 'middle'; c.font = '500 12px "IBM Plex Sans", system-ui, sans-serif'; c.fillStyle = css('--ink-2');
   let tx = x0; c.fillText(mt.axis, tx, y0 - 14); tx += c.measureText(mt.axis).width + 18;
@@ -528,7 +527,7 @@ function drawChart() {
     for (const sr of rows) { const yv = mt.stacked ? sr.top[i] : sr.d[i]; c.beginPath(); c.arc(X(i), Y(yv), 5.5, 0, Math.PI * 2); c.fillStyle = css('--surface'); c.fill(); c.beginPath(); c.arc(X(i), Y(yv), 3.5, 0, Math.PI * 2); c.fillStyle = sr.col; c.fill(); }
     if (rows.length) {
       const list = mt.stacked ? [...rows].reverse() : rows, tot = mt.stacked ? rows.reduce((a, sr) => a + sr.d[i], 0) : null;
-      tip.innerHTML = `<div class="yr">${YEAR0 + i}</div>` + list.map(sr => `<div class="row"><span class="l"><span class="dot" style="--c:${sr.col}"></span>${sr.name}${mt.stacked ? ` <span class="pct">${(sr.d[i] / tot * 100).toFixed(0)}%</span>` : ''}</span><span class="mono">${mt.fmt(sr.d[i])}</span></div>`).join('')
+      tip.innerHTML = `<div class="yr">Year ${i}</div>` + list.map(sr => `<div class="row"><span class="l"><span class="dot" style="--c:${sr.col}"></span>${sr.name}${mt.stacked ? ` <span class="pct">${(sr.d[i] / tot * 100).toFixed(0)}%</span>` : ''}</span><span class="mono">${mt.fmt(sr.d[i])}</span></div>`).join('')
         + (mt.stacked ? `<div class="row tot"><span class="l">Total</span><span class="mono">${mt.fmt(tot)}</span></div>` : '');
       tip.style.display = 'block';
       const tw = tip.offsetWidth; tip.style.left = (X(i) + 14 + tw > W ? X(i) - 14 - tw : X(i) + 14) + 'px'; tip.style.top = clamp(y0 + 8, 8, H - tip.offsetHeight - 8) + 'px';
