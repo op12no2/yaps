@@ -61,7 +61,7 @@ Children per woman over her lifetime. The faint line labelled "replacement 2.1" 
 
 ### Life expectancy
 
-Expected years of life for a baby born that year. Rich countries sit in the low to mid 80s. The presets add 5 or 10 years by the end of the projection.
+Expected years of life for a baby born that year. Rich countries sit in the low to mid 80s. The presets add 5 or 10 years by the end of the projection, or take it all the way to 150 for the optimists. The graph allows anything up to 150.
 
 ### Net migration
 
@@ -69,7 +69,7 @@ People arriving minus people leaving, per year. Positive means the population ga
 
 ## How the model works
 
-The simulator does not use a single growth rate. Each population is tracked as 101 age groups, one for each year of age from 0 to 100 and over, and every simulated year:
+The simulator does not use a single growth rate. Each population is tracked as 171 age groups, one for each year of age from 0 to 170 and over (the top end leaves room for a life expectancy of 150), and every simulated year:
 
 1. Everyone gets a year older, and a share of each age group dies according to an age-specific mortality curve. The curve is a Gompertz curve, the standard shape for adult mortality, with an infant-mortality bump, scaled so that life expectancy at birth matches the value on the graph for that year.
 2. Births are calculated from the fertility rate for that year, spread over women aged 15 to 49 with a typical age pattern that peaks in the late twenties. Half of each age group is assumed to be female.

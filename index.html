@@ -152,7 +152,7 @@ main{display:grid;grid-template-columns:380px 1fr;min-height:0}
 
 // ---------- constants ----------
 const YEAR0 = new Date().getFullYear();
-const AGES = 101;            // 0..100, last bin is 100+
+const AGES = 171;            // 0..170, last bin is 170+ (room for a life expectancy of 150)
 const FEMALE_SHARE = 0.49;
 const SERIES = 8;
 
@@ -167,9 +167,9 @@ const CURVES = {
   fert: { title: 'Fertility', unit: 'children per woman', min: 0, max: 6, ref: 2.1, refLabel: 'replacement 2.1',
           fmt: v => v.toFixed(1),
           presets: [['Hold steady', 'hold'], ['Fall to 1.5', 'end', 1.5], ['Rise to 2.1', 'end', 2.1]] },
-  life: { title: 'Life expectancy', unit: 'years', min: 40, max: 100, ref: null,
+  life: { title: 'Life expectancy', unit: 'years', min: 40, max: 150, ref: null,
           fmt: v => v.toFixed(0),
-          presets: [['Hold steady', 'hold'], ['+5 years', 'delta', 5], ['+10 years', 'delta', 10]] },
+          presets: [['Hold steady', 'hold'], ['+5 years', 'delta', 5], ['+10 years', 'delta', 10], ['Rise to 150', 'end', 150]] },
   mig:  { title: 'Net migration', unit: 'people a year', min: null, max: null, ref: 0, refLabel: '',
           fmt: v => (v > 0 ? '+' : v < 0 ? '−' : '') + fmtNum(Math.abs(v)),
           presets: [['Hold steady', 'hold'], ['Fall to zero', 'end', 0], ['Halve', 'scale', 0.5], ['Double', 'scale', 2]] },
@@ -241,7 +241,7 @@ function mortality(e0) {
     return q;
   };
   const lifeExp = q => { let l = 1, e = 0; for (let a = 0; a < AGES; a++) { const nl = l * (1 - q[a]); e += (l + nl) / 2; l = nl; } return e + l * 1.5; };
-  let lo = -20, hi = -2; // log B
+  let lo = -28, hi = -2; // log B
   for (let i = 0; i < 40; i++) { const mid = (lo + hi) / 2; if (lifeExp(build(Math.exp(mid))) > e0) lo = mid; else hi = mid; }
   const q = build(Math.exp((lo + hi) / 2));
   mortCache.set(key, q);
