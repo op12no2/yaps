@@ -7,7 +7,7 @@ It is a single `index.html` file. No install, no build step, no server. Open it 
 ## What it does
 
 - Projects the population year by year for as far ahead as you choose (10 to 200 years).
-- Draws the results on one chart: total population, births per year, deaths per year, median age, the share of people past retirement age, and the MVP ratio (see below). Click the coloured chips above the chart to show or hide each one. Hover the chart to read off real values for any year.
+- Charts one measure at a time: total population, births and deaths per year, median age, the share of people past retirement age, or the MVP ratio (see below). Click the coloured chips above the chart to switch. Hover the chart to read off the value for any year.
 - Recomputes instantly on every change. There is no run button.
 - Remembers your set-up in the browser, and can pack the whole thing into a link you can send to someone else.
 
@@ -23,11 +23,11 @@ The left-hand panel holds the inputs. The chart fills the rest of the screen.
 
 ## Reading the chart
 
-All six measures share one chart even though they live on very different scales: population is in the tens of millions, births in the hundreds of thousands, median age around 40 and the MVP ratio below 1. To make them comparable each line is drawn **indexed to its value today**, which counts as 100. A line at 120 means that measure is 20 percent above where it started, whatever its units. The horizontal rule at 100 is "no change".
+The chips above the chart pick what it shows. One is active at a time, so the vertical axis is always in real units for that measure: people, people per year, years, a percentage, or the ratio.
 
-Hover anywhere on the chart for the real values in that year. The chips above the chart switch lines on and off, and the choice is saved with everything else. Population and MVP ratio are on by default.
+**Births & deaths** draws both lines on the same axis because they share a unit. The year the deaths line crosses above the births line is the year the population would start shrinking without migration.
 
-When the MVP ratio is shown, its threshold of 1.00 is drawn as a faint line in the same colour at the indexed position. If the threshold is a long way above everything on the chart, a note at the top right says so rather than squashing the other lines to fit it in.
+Hover anywhere on the chart for the exact values in that year. The active chip is saved with everything else.
 
 ## The inputs
 

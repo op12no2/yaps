@@ -40,11 +40,10 @@ main{display:grid;grid-template-columns:380px 1fr;min-height:0}
 #summary b{color:var(--ink);font-weight:500}
 #chartArea{display:grid;grid-template-rows:auto 1fr;min-height:0;padding:12px 16px 16px;gap:10px}
 #legend{display:flex;flex-wrap:wrap;gap:6px 8px}
-.key{display:flex;align-items:center;gap:7px;padding:5px 10px;border-radius:999px;background:var(--surface-2);border:1px solid transparent;cursor:pointer;user-select:none;font-size:13px;color:var(--ink)}
-.key:hover{background:var(--surface-3)}
+.key{display:flex;align-items:center;gap:7px;padding:5px 10px;border-radius:999px;background:transparent;border:1px solid var(--hair);cursor:pointer;user-select:none;font-size:13px;color:var(--ink-2)}
+.key:hover{background:var(--surface-2);color:var(--ink)}
 .key .sw{width:12px;height:12px;border-radius:50%;background:var(--c);flex:none}
-.key.off{color:var(--muted)}
-.key.off .sw{background:transparent;box-shadow:inset 0 0 0 2px var(--c)}
+.key.on{background:var(--surface-3);border-color:transparent;color:var(--ink)}
 .key:focus-visible{border-color:var(--accent)}
 #chartWrap{position:relative;background:var(--surface);border-radius:10px;box-shadow:var(--shadow);min-height:0}
 #chart{position:absolute;inset:0;width:100%;height:100%;display:block;border-radius:10px}
@@ -140,7 +139,7 @@ const CURVES = {
 
 // ---------- helpers ----------
 function fmtNum(n) {
-  const a = Math.abs(n), trim = s => s.replace(/\.?0+$/, '');
+  const a = Math.abs(n), trim = s => s.includes('.') ? s.replace(/\.?0+$/, '') : s;
   if (a >= 1e9) return trim((n / 1e9).toFixed(a >= 1e10 ? 1 : 2)) + 'B';
   if (a >= 1e6) return trim((n / 1e6).toFixed(a >= 1e7 ? 1 : 2)) + 'M';
   if (a >= 1e3) return trim((n / 1e3).toFixed(a >= 1e4 ? 0 : 1)) + 'k';
@@ -249,7 +248,7 @@ function simulate(st) {
 
 // ---------- state ----------
 const defaults = () => ({
-  horizon: 75, show: { pop: true, births: false, deaths: false, median: false, retired: false, mvp: true }, pop: 70e6, profile: 'balanced',
+  horizon: 75, metric: 'pop', pop: 70e6, profile: 'balanced',
   fert: [{ t: 0, v: 1.6 }, { t: 1, v: 1.6 }],
   life: [{ t: 0, v: 82 }, { t: 1, v: 82 }],
   retire: [{ t: 0, v: 65 }, { t: 1, v: 65 }],
@@ -261,7 +260,7 @@ const editors = {};
 function valid(s) {
   if (!(s && typeof s === 'object' && Array.isArray(s.fert) && Array.isArray(s.life) && Array.isArray(s.mig) && isFinite(s.pop))) return false;
   if (typeof s.retire === 'number') s.retire = [{ t: 0, v: s.retire }, { t: 1, v: s.retire }];
-  if (!s.show || typeof s.show !== 'object') s.show = { ...defaults().show, ...(s.metric ? { [s.metric]: true } : {}) };
+  if (!(s.metric in METRIC)) s.metric = 'pop';
   return Array.isArray(s.retire);
 }
 function load() {
@@ -412,70 +411,65 @@ profileSeg.onclick = e => { const b = e.target.closest('button'); if (!b) return
 // ---------- main chart ----------
 const chart = document.getElementById('chart'), cctx = chart.getContext('2d'), tip = document.getElementById('tip'), wrap = document.getElementById('chartWrap');
 const METRIC = {
-  pop:     { name: 'Population',        color: '--s1', fmt: fmtNum },
-  births:  { name: 'Births per year',   color: '--s3', fmt: fmtNum },
-  deaths:  { name: 'Deaths per year',   color: '--s2', fmt: fmtNum },
-  median:  { name: 'Median age',        color: '--s4', fmt: v => v.toFixed(1) },
-  retired: { name: 'Share retired',     color: '--s5', fmt: v => (v * 100).toFixed(0) + '%' },
-  mvp:     { name: 'MVP ratio',         color: '--s8', fmt: v => v.toFixed(2), ref: 1, refLabel: 'MVP threshold (ratio 1.00). Higher is worse.' },
+  pop:     { name: 'Population', axis: 'People', fmt: fmtNum, series: [{ key: 'pop', name: 'Population', color: '--s1' }] },
+  natural: { name: 'Births & deaths', axis: 'People per year', fmt: fmtNum, series: [{ key: 'births', name: 'Births', color: '--s3' }, { key: 'deaths', name: 'Deaths', color: '--s2' }] },
+  median:  { name: 'Median age', axis: 'Years', fmt: v => v.toFixed(1), series: [{ key: 'median', name: 'Median age', color: '--s4' }] },
+  retired: { name: 'Share retired', axis: 'Share of people past retirement age', fmt: v => (v * 100).toFixed(0) + '%', series: [{ key: 'retired', name: 'Share retired', color: '--s5' }] },
+  mvp:     { name: 'MVP ratio', axis: `MVP ratio: people past retirement age for every person aged ${WORK_START} up to it`, fmt: v => v.toFixed(2), ref: 1, refLabel: '1.00 = MVP threshold, one retiree per working-age adult. Higher is worse.', series: [{ key: 'mvp', name: 'MVP ratio', color: '--s8' }] },
 };
 const legendEl = document.getElementById('legend');
 function renderLegend() {
   legendEl.innerHTML = '';
   for (const [k, m] of Object.entries(METRIC)) {
-    const b = document.createElement('button'); b.className = 'key' + (state.show[k] ? '' : ' off'); b.style.setProperty('--c', css(m.color));
-    b.innerHTML = `<span class="sw"></span>${m.name}`; b.title = (state.show[k] ? 'Hide ' : 'Show ') + m.name.toLowerCase();
-    b.onclick = () => { state.show[k] = !state.show[k]; renderLegend(); drawChart(); saveLocal(); };
+    const b = document.createElement('button'); b.className = 'key' + (state.metric === k ? ' on' : '');
+    const cols = m.series.map(sr => css(sr.color));
+    const sw = cols.length > 1 ? `linear-gradient(90deg, ${cols[0]} 50%, ${cols[1]} 50%)` : cols[0];
+    b.innerHTML = `<span class="sw" style="background:${sw}"></span>${m.name}`;
+    b.onclick = () => { state.metric = k; renderLegend(); drawChart(); saveLocal(); };
     legendEl.appendChild(b);
   }
 }
-// Every series is drawn indexed to its value today (= 100) so that measures on
-// very different scales can share one axis honestly. Real values live in the tooltip.
-function baseOf(d) { for (const v of d) if (isFinite(v) && v > 0) return v; return 1; }
 let hoverX = null, chartGeom = null;
 function drawChart() {
   const dpr = window.devicePixelRatio || 1, r = wrap.getBoundingClientRect(), W = r.width, H = r.height; if (!W || !H || !result) return;
   if (chart.width !== Math.round(W * dpr) || chart.height !== Math.round(H * dpr)) { chart.width = Math.round(W * dpr); chart.height = Math.round(H * dpr); }
   const c = cctx; c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, W, H);
-  const pad = { l: 56, r: 24, t: 28, b: 34 }, x0 = pad.l, x1 = W - pad.r, y0 = pad.t, y1 = H - pad.b, N = state.horizon;
-  const series = Object.keys(METRIC).filter(k => state.show[k]).map(k => { const d = result[k], base = baseOf(d); return { k, m: METRIC[k], d, base, idx: d.map(v => isFinite(v) ? v / base * 100 : NaN), col: css(METRIC[k].color) }; });
-  let max = 100; for (const sr of series) for (const v of sr.idx) if (isFinite(v) && v > max) max = v;
-  const mvp = series.find(sr => sr.k === 'mvp'); let refIdx = null;
-  if (mvp) { refIdx = mvp.m.ref / mvp.base * 100; if (refIdx <= max * 1.6) max = Math.max(max, refIdx * 1.08); else refIdx = null; }
-  max *= 1.04;
+  const mt = METRIC[state.metric], pad = { l: 64, r: 24, t: 28, b: 34 }, x0 = pad.l, x1 = W - pad.r, y0 = pad.t, y1 = H - pad.b, N = state.horizon;
+  const series = mt.series.map(sr => ({ ...sr, d: result[sr.key], col: css(sr.color) }));
+  let max = 0; for (const sr of series) for (const v of sr.d) if (isFinite(v) && v > max) max = v;
+  if (max <= 0) max = 1;
+  if (mt.ref) max = Math.max(max, mt.ref * 1.15);
   const step = niceStep(max, 5), ymax = Math.ceil(max / step) * step;
   const X = i => x0 + i / N * (x1 - x0), Y = v => y1 - v / ymax * (y1 - y0);
   chartGeom = { x0, x1 };
   c.font = '11px "IBM Plex Mono", ui-monospace, monospace'; c.textBaseline = 'middle'; c.fillStyle = css('--muted'); c.strokeStyle = css('--grid'); c.lineWidth = 1;
-  for (let v = 0; v <= ymax + 1e-9; v += step) { const y = Math.round(Y(v)) + 0.5; c.beginPath(); c.moveTo(x0, y); c.lineTo(x1, y); c.stroke(); c.textAlign = 'right'; c.fillText(String(Math.round(v)), x0 - 8, y); }
-  const y100 = Math.round(Y(100)) + 0.5; c.strokeStyle = css('--axis'); c.beginPath(); c.moveTo(x0, y100); c.lineTo(x1, y100); c.stroke();
-  c.beginPath(); c.moveTo(x0, Math.round(y1) + 0.5); c.lineTo(x1, Math.round(y1) + 0.5); c.stroke();
+  for (let v = 0; v <= ymax + 1e-9; v += step) { const y = Math.round(Y(v)) + 0.5; c.beginPath(); c.moveTo(x0, y); c.lineTo(x1, y); c.stroke(); c.textAlign = 'right'; c.fillText(mt.fmt(v), x0 - 8, y); }
+  c.strokeStyle = css('--axis'); c.beginPath(); c.moveTo(x0, Math.round(y1) + 0.5); c.lineTo(x1, Math.round(y1) + 0.5); c.stroke();
   const xs = niceStep(N, 8); c.textAlign = 'center'; c.textBaseline = 'top';
   for (let i = 0; i <= N; i += xs) if (i === N || N - i >= xs / 2) c.fillText(String(YEAR0 + i), X(i), y1 + 8);
   if (N % xs) c.fillText(String(YEAR0 + N), X(N), y1 + 8);
+  // axis title, plus an inline key when more than one line is drawn
   c.textAlign = 'left'; c.textBaseline = 'middle'; c.font = '500 12px "IBM Plex Sans", system-ui, sans-serif'; c.fillStyle = css('--ink-2');
-  c.fillText(series.length ? 'Indexed: today = 100. Hover for real values.' : 'Nothing selected. Click a measure above to show it.', x0, y0 - 14);
-  if (refIdx !== null) {
-    const y = Math.round(Y(refIdx)) + 0.5; c.strokeStyle = mvp.col; c.globalAlpha = 0.6; c.beginPath(); c.moveTo(x0, y); c.lineTo(x1, y); c.stroke(); c.globalAlpha = 1;
-    c.textAlign = 'right'; c.font = '500 11px "IBM Plex Sans", system-ui, sans-serif'; c.fillStyle = css('--ink-2'); c.fillText(mvp.m.refLabel, x1, y - 9);
-  } else if (mvp) {
-    c.textAlign = 'right'; c.font = '500 11px "IBM Plex Sans", system-ui, sans-serif'; c.fillStyle = css('--ink-2'); c.fillText('MVP threshold is far above this chart', x1, y0 - 14);
-  }
+  let tx = x0; c.fillText(mt.axis, tx, y0 - 14); tx += c.measureText(mt.axis).width + 18;
+  if (series.length > 1) for (const sr of series) { c.beginPath(); c.arc(tx + 5, y0 - 14, 4, 0, Math.PI * 2); c.fillStyle = sr.col; c.fill(); c.fillStyle = css('--ink-2'); c.fillText(sr.name, tx + 14, y0 - 14); tx += 14 + c.measureText(sr.name).width + 14; }
+  if (mt.ref) { const y = Math.round(Y(mt.ref)) + 0.5; c.strokeStyle = css('--ink-2'); c.beginPath(); c.moveTo(x0, y); c.lineTo(x1, y); c.stroke(); c.textAlign = 'right'; c.font = '500 11px "IBM Plex Sans", system-ui, sans-serif'; c.fillStyle = css('--ink-2'); c.fillText(mt.refLabel, x1, y - 9); }
   c.lineWidth = 2; c.lineJoin = 'round'; c.lineCap = 'round';
   for (const sr of series) {
     c.strokeStyle = sr.col; c.beginPath(); let started = false;
-    for (let i = 0; i <= N; i++) { if (!isFinite(sr.idx[i])) continue; const x = X(i), y = Y(sr.idx[i]); started ? c.lineTo(x, y) : c.moveTo(x, y); started = true; }
+    for (let i = 0; i <= N; i++) { if (!isFinite(sr.d[i])) continue; const x = X(i), y = Y(sr.d[i]); started ? c.lineTo(x, y) : c.moveTo(x, y); started = true; }
     c.stroke();
-    const last = sr.idx[N]; if (isFinite(last)) { c.beginPath(); c.arc(X(N), Y(last), 6, 0, Math.PI * 2); c.fillStyle = css('--surface'); c.fill(); c.beginPath(); c.arc(X(N), Y(last), 4, 0, Math.PI * 2); c.fillStyle = sr.col; c.fill(); }
+    const last = sr.d[N]; if (isFinite(last)) { c.beginPath(); c.arc(X(N), Y(last), 6, 0, Math.PI * 2); c.fillStyle = css('--surface'); c.fill(); c.beginPath(); c.arc(X(N), Y(last), 4, 0, Math.PI * 2); c.fillStyle = sr.col; c.fill(); }
   }
-  if (hoverX !== null && series.length) {
+  if (hoverX !== null) {
     const i = clamp(Math.round((hoverX - x0) / (x1 - x0) * N), 0, N), x = Math.round(X(i)) + 0.5;
     c.strokeStyle = css('--axis'); c.beginPath(); c.moveTo(x, y0); c.lineTo(x, y1); c.stroke();
     const rows = series.filter(sr => isFinite(sr.d[i]));
-    for (const sr of rows) { c.beginPath(); c.arc(X(i), Y(sr.idx[i]), 5.5, 0, Math.PI * 2); c.fillStyle = css('--surface'); c.fill(); c.beginPath(); c.arc(X(i), Y(sr.idx[i]), 3.5, 0, Math.PI * 2); c.fillStyle = sr.col; c.fill(); }
-    tip.innerHTML = `<div class="yr">${YEAR0 + i}</div>` + rows.map(sr => `<div class="row"><span class="l"><span class="dot" style="--c:${sr.col}"></span>${sr.m.name}</span><span class="mono">${sr.m.fmt(sr.d[i])}</span></div>`).join('');
-    tip.style.display = 'block';
-    const tw = tip.offsetWidth; tip.style.left = (X(i) + 14 + tw > W ? X(i) - 14 - tw : X(i) + 14) + 'px'; tip.style.top = clamp(y0 + 8, 8, H - tip.offsetHeight - 8) + 'px';
+    for (const sr of rows) { c.beginPath(); c.arc(X(i), Y(sr.d[i]), 5.5, 0, Math.PI * 2); c.fillStyle = css('--surface'); c.fill(); c.beginPath(); c.arc(X(i), Y(sr.d[i]), 3.5, 0, Math.PI * 2); c.fillStyle = sr.col; c.fill(); }
+    if (rows.length) {
+      tip.innerHTML = `<div class="yr">${YEAR0 + i}</div>` + rows.map(sr => `<div class="row"><span class="l"><span class="dot" style="--c:${sr.col}"></span>${sr.name}</span><span class="mono">${mt.fmt(sr.d[i])}</span></div>`).join('');
+      tip.style.display = 'block';
+      const tw = tip.offsetWidth; tip.style.left = (X(i) + 14 + tw > W ? X(i) - 14 - tw : X(i) + 14) + 'px'; tip.style.top = clamp(y0 + 8, 8, H - tip.offsetHeight - 8) + 'px';
+    } else tip.style.display = 'none';
   } else tip.style.display = 'none';
 }
 wrap.addEventListener('pointermove', e => { const r = wrap.getBoundingClientRect(); const x = e.clientX - r.left; hoverX = chartGeom && x >= chartGeom.x0 - 6 && x <= chartGeom.x1 + 6 ? x : null; drawChart(); });
