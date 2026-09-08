@@ -76,7 +76,7 @@ The simulator does not use a single growth rate. The population is tracked as 17
 2. Births are calculated from the fertility rate for that year, spread over women aged 15 to 49 with a typical age pattern that peaks in the late twenties. Half of each age group is assumed to be female.
 3. Net migrants are added or removed with a typical migrant age profile, concentrated in young adults.
 
-The starting age structure is derived from the Young / Balanced / Older choice using a stable-population approximation. That is the roughest part of the model and the first thing worth replacing with a real age pyramid.
+The starting age structure is derived from the Young / Balanced / Older choice using a stable-population approximation, with the youngest 25 years eased towards the cohort size today's fertility actually produces, so that the past blends into the projection instead of stepping. It is still the roughest part of the model and the first thing worth replacing with a real age pyramid.
 
 Migrants join the same age groups as everyone else, so from the year they arrive they have the same fertility and mortality as the existing population.
 
