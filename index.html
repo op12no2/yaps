@@ -49,7 +49,6 @@ main{display:grid;grid-template-columns:380px 1fr;min-height:0}
 .section{border-top:1px solid var(--hair);padding-top:14px;margin-top:16px}
 .prop .lab .v{font-size:12px;color:var(--ink-2);text-align:right}
 .prop .lab .v b{color:var(--ink);font-weight:500}
-.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .seg{display:flex;background:var(--surface-2);border-radius:6px;padding:2px;gap:2px}
 .seg button{flex:1;border:0;background:transparent;border-radius:4px;padding:5px 4px;cursor:pointer;color:var(--ink-2);font-size:12px}
 .seg button.on{background:var(--surface-3);color:var(--ink)}
@@ -91,15 +90,9 @@ main{display:grid;grid-template-columns:380px 1fr;min-height:0}
   <main>
     <aside id="sidebar">
       <div id="summary"></div>
-      <div class="row2">
-        <div class="prop">
-          <div class="lab"><span class="t">Population today</span></div>
-          <input id="popIn" class="mono wide" type="text" aria-label="Population today">
-        </div>
-        <div class="prop">
-          <div class="lab"><span class="t">Retirement age</span></div>
-          <input id="retireIn" class="mono wide" type="number" min="40" max="150" step="1" aria-label="Retirement age">
-        </div>
+      <div class="prop">
+        <div class="lab"><span class="t">Population today</span></div>
+        <input id="popIn" class="mono wide" type="text" aria-label="Population today">
       </div>
       <div class="prop">
         <div class="lab"><span class="t">Age profile</span><span class="v">how many young vs old today</span></div>
@@ -136,6 +129,8 @@ const CURVES = {
   fert: { title: 'Fertility', unit: 'children per woman', min: 0, max: 6, ref: 2.1, refLabel: 'replacement 2.1',
           fmt: v => v.toFixed(1) },
   life: { title: 'Life expectancy', unit: 'years', min: 40, max: 150, ref: null,
+          fmt: v => v.toFixed(0) },
+  retire: { title: 'Retirement age', unit: 'years old', min: 40, max: 100, ref: null,
           fmt: v => v.toFixed(0) },
   mig:  { title: 'Net migration', unit: 'people a year', min: null, max: null, ref: 0, refLabel: '',
           fmt: v => (v > 0 ? '+' : v < 0 ? '−' : '') + fmtNum(Math.abs(v)) },
@@ -223,18 +218,18 @@ function stablePyramid(total, r, q) {
 }
 
 function simulate(st) {
-  const horizon = st.horizon, retire = st.retire;
-  const fert = interpolator(st.fert), life = interpolator(st.life), mig = interpolator(st.mig);
+  const horizon = st.horizon;
+  const fert = interpolator(st.fert), life = interpolator(st.life), mig = interpolator(st.mig), retireAt = interpolator(st.retire);
   const out = { pop: [], births: [], deaths: [], median: [], retired: [], mvp: [] };
   let n = stablePyramid(st.pop, PROFILES[st.profile].r, mortality(life(0)));
-  const record = (n, births, deaths) => {
+  const record = (n, births, deaths, retire) => {
     let tot = 0, old = 0, work = 0;
     for (let a = 0; a < AGES; a++) { tot += n[a]; if (a >= retire) old += n[a]; else if (a >= WORK_START) work += n[a]; }
     let acc = 0, med = 0; for (let a = 0; a < AGES; a++) { if (acc + n[a] >= tot / 2) { med = a + (tot / 2 - acc) / Math.max(n[a], 1e-9); break; } acc += n[a]; }
     out.pop.push(tot); out.births.push(births); out.deaths.push(deaths); out.median.push(med);
     out.retired.push(tot > 0 ? old / tot : 0); out.mvp.push(work > 0 ? old / work : 0);
   };
-  record(n, NaN, NaN);
+  record(n, NaN, NaN, Math.round(retireAt(0)));
   for (let y = 1; y <= horizon; y++) {
     const t = y / horizon, tfr = fert(t), q = mortality(life(t)), m = mig(t);
     let births = 0, deaths = 0;
@@ -245,22 +240,27 @@ function simulate(st) {
     deaths += births * q[0] / 2;
     for (let a = 0; a < AGES; a++) nn[a] = Math.max(0, nn[a] + m * MIG_SHAPE[a]);
     n = nn;
-    record(n, births, deaths);
+    record(n, births, deaths, Math.round(retireAt(t)));
   }
   return out;
 }
 
 // ---------- state ----------
 const defaults = () => ({
-  horizon: 75, metric: 'pop', pop: 70e6, profile: 'balanced', retire: 65,
+  horizon: 75, metric: 'pop', pop: 70e6, profile: 'balanced',
   fert: [{ t: 0, v: 1.6 }, { t: 1, v: 1.6 }],
   life: [{ t: 0, v: 82 }, { t: 1, v: 82 }],
+  retire: [{ t: 0, v: 65 }, { t: 1, v: 65 }],
   mig:  [{ t: 0, v: 0 }, { t: 1, v: 0 }],
 });
 let state = null, result = null;
 const editors = {};
 
-function valid(s) { return s && typeof s === 'object' && Array.isArray(s.fert) && Array.isArray(s.life) && Array.isArray(s.mig) && isFinite(s.pop); }
+function valid(s) {
+  if (!(s && typeof s === 'object' && Array.isArray(s.fert) && Array.isArray(s.life) && Array.isArray(s.mig) && isFinite(s.pop))) return false;
+  if (typeof s.retire === 'number') s.retire = [{ t: 0, v: s.retire }, { t: 1, v: s.retire }];
+  return Array.isArray(s.retire);
+}
 function load() {
   const h = location.hash.match(/^#s=(.+)$/);
   if (h) { try { const s = JSON.parse(decodeURIComponent(escape(atob(h[1])))); history.replaceState(null, '', location.pathname); if (valid(s)) { state = s; saveLocal(); return; } } catch (e) { /* fall through */ } }
@@ -337,7 +337,7 @@ class CurveEditor {
     if (t - pts[i - 1].t < 0.02 || pts[i].t - t < 0.02) return;
     pts.splice(i, 0, { t, v: this.snap(v) }); this.draw(); this.onChange();
   }
-  snap(v) { if (this.key === 'fert') return Math.round(v * 20) / 20; if (this.key === 'life') return Math.round(v * 2) / 2; const s = niceStep(this.bounds()[1], 40); return Math.round(v / s) * s; }
+  snap(v) { if (this.key === 'fert') return Math.round(v * 20) / 20; if (this.key === 'life') return Math.round(v * 2) / 2; if (this.key === 'retire') return Math.round(v); const s = niceStep(this.bounds()[1], 40); return Math.round(v / s) * s; }
   draw() {
     const cv = this.cv, dpr = window.devicePixelRatio || 1, g = this.geom(); if (g.w === 0) return;
     if (cv.width !== Math.round(g.w * dpr) || cv.height !== Math.round(g.h * dpr)) { cv.width = Math.round(g.w * dpr); cv.height = Math.round(g.h * dpr); }
@@ -379,11 +379,10 @@ function curveSummary(key) {
   if (!same(ext.v, z) && !same(ext.v, a)) return `<b>${s.fmt(a)}</b> now, ${ext.v > a ? 'peaking at' : 'dipping to'} ${s.fmt(ext.v)} around ${Math.round(YEAR0 + ext.t * state.horizon)}, then ${s.fmt(z)} by ${end}`;
   return `<b>${s.fmt(a)}</b> now, ${z > a ? 'rising' : 'falling'} to <b>${s.fmt(z)}</b> by ${end}`;
 }
-const popIn = document.getElementById('popIn'), retireIn = document.getElementById('retireIn'), profileSeg = document.getElementById('profileSeg'), curvesEl = document.getElementById('curves'), summaryEl = document.getElementById('summary');
+const popIn = document.getElementById('popIn'), profileSeg = document.getElementById('profileSeg'), curvesEl = document.getElementById('curves'), summaryEl = document.getElementById('summary');
 
 function buildSidebar() {
   popIn.value = fmtNum(state.pop);
-  retireIn.value = state.retire;
   profileSeg.innerHTML = Object.entries(PROFILES).map(([k, v]) => `<button data-k="${k}" class="${state.profile === k ? 'on' : ''}">${v.label}</button>`).join('');
   curvesEl.innerHTML = Object.keys(CURVES).map(k => `
     <div class="prop section" data-curve="${k}">
@@ -405,7 +404,6 @@ function renderSummary() {
   curvesEl.querySelectorAll('[data-curve]').forEach(w => { w.querySelector('[data-cs]').innerHTML = curveSummary(w.dataset.curve); });
 }
 popIn.addEventListener('change', () => { const v = parseNum(popIn.value); if (isFinite(v) && v > 0) { state.pop = v; recompute(); redrawEditors(); } popIn.value = fmtNum(state.pop); });
-retireIn.addEventListener('change', () => { state.retire = clamp(Math.round(+retireIn.value || 65), 40, 150); retireIn.value = state.retire; recompute(); });
 profileSeg.onclick = e => { const b = e.target.closest('button'); if (!b) return; state.profile = b.dataset.k; profileSeg.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); recompute(); };
 
 // ---------- main chart ----------
@@ -415,8 +413,8 @@ const METRIC = {
   births: { label: () => 'Births per year', fmt: fmtNum },
   deaths: { label: () => 'Deaths per year', fmt: fmtNum },
   median: { label: () => 'Median age', fmt: v => v.toFixed(1) },
-  retired: { label: () => `Share aged ${state.retire} and over`, fmt: v => (v * 100).toFixed(0) + '%' },
-  mvp: { label: () => `MVP ratio: people aged ${state.retire}+ for every person aged ${WORK_START} to ${state.retire - 1}`, fmt: v => v.toFixed(2), ref: 1, refLabel: '1.00 = MVP threshold, one retiree per working-age adult. Higher is worse.' },
+  retired: { label: () => 'Share of people past retirement age', fmt: v => (v * 100).toFixed(0) + '%' },
+  mvp: { label: () => `MVP ratio: people past retirement age for every person aged ${WORK_START} up to it`, fmt: v => v.toFixed(2), ref: 1, refLabel: '1.00 = MVP threshold, one retiree per working-age adult. Higher is worse.' },
 };
 let hoverX = null, chartGeom = null;
 function drawChart() {

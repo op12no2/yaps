@@ -1,6 +1,6 @@
 # YAPS
 
-**Yet another population simulator.** A browser-only tool for playing with population projections. Set up one population, shape how its fertility, life expectancy and migration change over the coming decades, and watch the projection update as you drag.
+**Yet another population simulator.** A browser-only tool for playing with population projections. Set up one population, shape how its fertility, life expectancy, retirement age and migration change over the coming decades, and watch the projection update as you drag.
 
 It is a single `index.html` file. No install, no build step, no server. Open it in a browser or host it on GitHub Pages.
 
@@ -28,13 +28,12 @@ The left-hand panel holds the inputs. The chart fills the rest of the screen.
 At the top of the panel is a one-line summary: population today, population at the end of the projection, the percentage change, how the median age moves, and where the MVP ratio ends up.
 
 - **Population today.** Type a number however you like: `68m`, `68 million`, `68,000,000` and `0.068b` all work.
-- **Retirement age.** The age at which people stop counting as working-age. It feeds the "share past retirement age" view and the MVP ratio. Raise it and the ratio falls.
 - **Age profile.** A three-way choice: Young, Balanced or Older. This is a rough description of how many children versus pensioners there are today. A country like Nigeria is Young, most of Western Europe is Balanced, Japan is Older. It matters a lot: an Older population keeps shrinking for decades even if fertility recovers, because there are fewer people of parenting age.
-- **Three small graphs** for fertility, life expectancy and net migration. See the next section.
+- **Four small graphs** for fertility, life expectancy, retirement age and net migration. See the next section.
 
 ## The small graphs
 
-Each of the three time-varying inputs is drawn as a line running from today (left edge) to the last year of the projection (right edge). The line *is* the setting. Its height at any year is the value used for that year.
+Each of the four time-varying inputs is drawn as a line running from today (left edge) to the last year of the projection (right edge). The line *is* the setting. Its height at any year is the value used for that year.
 
 Every graph starts flat, with a point at each end.
 
@@ -54,6 +53,10 @@ Children per woman over her lifetime. The faint line labelled "replacement 2.1" 
 ### Life expectancy
 
 Expected years of life for a baby born that year. Rich countries sit in the low to mid 80s. The graph allows anything up to 150, for the optimists.
+
+### Retirement age
+
+The age at which people stop counting as working-age and start counting as retired. It feeds the "share past retirement age" view and the MVP ratio. It is a graph rather than a single number because the two can move together: if medicine keeps people productive for longer, retirement can drift upwards over the decades and the MVP ratio settles back down. The graph runs from 40 to 100.
 
 ### Net migration
 
@@ -79,7 +82,7 @@ Choose **MVP ratio** in the Show menu to chart it. A value of 0.30 means three r
 
 Things to bear in mind when reading it:
 
-- The retirement age input moves the boundary. Push life expectancy up without moving retirement and the ratio soars; move retirement with it and the ratio settles back.
+- The retirement age graph moves the boundary year by year. Push life expectancy up without moving retirement and the ratio soars; let retirement rise with it and the ratio settles back.
 - Not everyone of working age works. If you mean retirees per actual worker, the equivalent threshold on this chart is nearer 0.7.
 - The model does not yet react to the ratio. Migration follows the graph you drew whether or not the threshold is crossed. A feedback where people leave as the ratio climbs is a natural next step.
 
