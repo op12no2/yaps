@@ -22,6 +22,7 @@ model works; this file is about how to work on it.
 2. Put the new version at the start of the commit message, e.g.
    `v1.4: retirement age up to 120`.
 3. Push straight to `main`. There are no branches or PRs on this project.
+   The user has given standing permission to commit and push without asking.
 
 ## Design rules (the user's, and they matter)
 
