@@ -1,6 +1,6 @@
 # YAPS
 
-**Yet another population simulator.** A browser-only tool for playing with population projections. Set up one population, shape how its fertility, life expectancy, retirement age and migration change over the coming decades, and watch the projection update as you drag.
+**Yet another population simulator.** A browser-only tool for playing with population projections. Set up one population, shape how its fertility, life expectancy, retirement age and migration change over the coming decades, and watch the projection update as you drag. Try it here: https://op12no2.github.io/yaps/
 
 It is a single `index.html` file. No install, no build step, no server. Open it in a browser or host it on GitHub Pages.
 
