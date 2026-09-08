@@ -47,19 +47,17 @@ The curve between points is smooth and never overshoots, so two or three points 
 
 Above each graph is a sentence describing the current shape, for example "4.5 now, falling to 2.3 by 2101". If the sentence says what you meant, the graph is right.
 
-Under each graph are preset buttons for common shapes. They reset the graph to a two-point line, so use them first and then add detail.
-
 ### Fertility
 
 Children per woman over her lifetime. The faint line labelled "replacement 2.1" is the level at which a population roughly sustains itself without migration. Most rich countries are between 1.2 and 1.8. Sub-Saharan Africa is mostly between 3 and 6 and falling.
 
 ### Life expectancy
 
-Expected years of life for a baby born that year. Rich countries sit in the low to mid 80s. The presets add 5 or 10 years by the end of the projection, or take it all the way to 150 for the optimists. The graph allows anything up to 150.
+Expected years of life for a baby born that year. Rich countries sit in the low to mid 80s. The graph allows anything up to 150, for the optimists.
 
 ### Net migration
 
-People arriving minus people leaving, per year. Positive means the population gains people. The vertical scale adjusts to the size of the population. For a large country this is often the single biggest lever, so it is worth trying "Fall to zero" to see how much of the growth it accounts for.
+People arriving minus people leaving, per year. Positive means the population gains people. The vertical scale adjusts to the size of the population. For a large country this is often the single biggest lever, so it is worth dragging it to zero to see how much of the growth it accounts for.
 
 ## How the model works
 
