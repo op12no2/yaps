@@ -7,32 +7,11 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 :root{
-  color-scheme:light;
-  --page:#f2f4f7; --surface:#ffffff; --surface-2:#e9edf2; --surface-3:#dfe4ea;
-  --ink:#161a1f; --ink-2:#5a6472; --muted:#8b95a1;
-  --grid:#e4e8ed; --axis:#c3cad2; --hair:rgba(22,26,31,.12);
-  --accent:#2a78d6; --accent-ink:#ffffff; --danger:#d03b3b;
-  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300; --s7:#4a3aa7; --s8:#e34948;
-  --shadow:0 1px 2px rgba(22,26,31,.06), 0 4px 16px rgba(22,26,31,.06);
-}
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
-    color-scheme:dark;
-    --page:#0f1215; --surface:#171b20; --surface-2:#20262d; --surface-3:#2a313a;
-    --ink:#f1f3f5; --ink-2:#aab3bd; --muted:#7f8994;
-    --grid:#252b32; --axis:#3a424b; --hair:rgba(255,255,255,.12);
-    --accent:#3987e5; --accent-ink:#ffffff; --danger:#e66767;
-    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767;
-    --shadow:0 1px 2px rgba(0,0,0,.4), 0 4px 16px rgba(0,0,0,.3);
-  }
-}
-:root[data-theme="dark"]{
   color-scheme:dark;
   --page:#0f1215; --surface:#171b20; --surface-2:#20262d; --surface-3:#2a313a;
   --ink:#f1f3f5; --ink-2:#aab3bd; --muted:#7f8994;
   --grid:#252b32; --axis:#3a424b; --hair:rgba(255,255,255,.12);
   --accent:#3987e5; --accent-ink:#ffffff; --danger:#e66767;
-  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767;
   --shadow:0 1px 2px rgba(0,0,0,.4), 0 4px 16px rgba(0,0,0,.3);
 }
 *{box-sizing:border-box}
@@ -53,60 +32,38 @@ input:focus-visible,select:focus-visible,button:focus-visible{border-color:var(-
 input[type=number]{width:72px;text-align:right}
 .btn{background:var(--surface-2);border:1px solid transparent;border-radius:6px;padding:6px 12px;cursor:pointer;white-space:nowrap}
 .btn:hover{background:var(--surface-3)}
-.btn.primary{background:var(--accent);color:var(--accent-ink)}
-.btn.primary:hover{filter:brightness(1.08)}
 .btn.small{padding:3px 8px;font-size:12px}
-.btn.icon{padding:4px 6px;line-height:1;color:var(--ink-2)}
-.btn.icon:hover{color:var(--ink)}
 
 main{display:grid;grid-template-columns:380px 1fr;min-height:0}
-#sidebar{border-right:1px solid var(--hair);overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px;background:var(--page)}
-#chartArea{display:grid;grid-template-rows:auto 1fr;min-height:0;padding:12px 16px 16px;gap:8px}
-.toolbar{display:flex;align-items:center;gap:16px}
-#legend{display:flex;flex-wrap:wrap;gap:6px 16px;min-height:20px}
-.key{display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--ink-2);user-select:none}
-.key .sw{width:14px;height:3px;border-radius:2px;background:var(--c)}
-.key.off{opacity:.45;text-decoration:line-through}
+#sidebar{border-right:1px solid var(--hair);overflow-y:auto;padding:14px 16px 20px;display:flex;flex-direction:column;gap:16px;background:var(--surface)}
+#summary{color:var(--ink-2);font-size:13px;line-height:1.5}
+#summary b{color:var(--ink);font-weight:500}
+#chartArea{display:grid;grid-template-rows:1fr;min-height:0;padding:16px}
 #chartWrap{position:relative;background:var(--surface);border-radius:10px;box-shadow:var(--shadow);min-height:0}
 #chart{position:absolute;inset:0;width:100%;height:100%;display:block;border-radius:10px}
-#tip{position:absolute;pointer-events:none;background:var(--surface);border:1px solid var(--hair);box-shadow:var(--shadow);border-radius:8px;padding:8px 10px;font-size:12px;display:none;min-width:150px}
-#tip .yr{font-weight:600;margin-bottom:4px}
-#tip .row{display:flex;align-items:center;gap:8px;justify-content:space-between}
-#tip .row .l{display:flex;align-items:center;gap:6px;color:var(--ink-2)}
-#tip .dot{width:8px;height:8px;border-radius:50%;background:var(--c)}
+#tip{position:absolute;pointer-events:none;background:var(--surface-2);border:1px solid var(--hair);box-shadow:var(--shadow);border-radius:8px;padding:6px 10px;font-size:12px;display:none;white-space:nowrap}
+#tip .yr{color:var(--ink-2);margin-right:8px}
 
-.pop{background:var(--surface);border-radius:10px;box-shadow:var(--shadow);border-left:4px solid var(--c)}
-.pop .head{display:flex;align-items:center;gap:6px;padding:8px 8px 8px 10px}
-.pop .head .name{flex:1;min-width:0;background:transparent;border:1px solid transparent;border-radius:6px;padding:4px 6px;font-weight:600}
-.pop .head .name:hover{background:var(--surface-2)}
-.pop .head .name:focus{background:var(--surface-2)}
-.pop .head .chev{transition:transform .15s}
-.pop.open .head .chev{transform:rotate(90deg)}
-.pop .sum{padding:0 14px 10px;color:var(--ink-2);font-size:12px}
-.pop .sum b{color:var(--ink);font-weight:500}
-.pop.hidden .sum,.pop.hidden .head .name{opacity:.5}
-.pop .body{display:none;border-top:1px solid var(--hair);padding:12px 14px 14px;display:none;flex-direction:column;gap:14px}
-.pop.open .body{display:flex}
 .prop{display:flex;flex-direction:column;gap:6px}
 .prop .lab{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
 .prop .lab .t{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-2)}
 .prop .lab .v{font-size:12px;color:var(--ink-2);text-align:right}
 .prop .lab .v b{color:var(--ink);font-weight:500}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .seg{display:flex;background:var(--surface-2);border-radius:6px;padding:2px;gap:2px}
 .seg button{flex:1;border:0;background:transparent;border-radius:4px;padding:5px 4px;cursor:pointer;color:var(--ink-2);font-size:12px}
-.seg button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.seg button.on{background:var(--surface-3);color:var(--ink)}
 .curve{width:100%;height:120px;display:block;touch-action:none;border-radius:6px;background:var(--surface);cursor:crosshair}
 .presets{display:flex;gap:6px;flex-wrap:wrap}
-.hint{font-size:12px;color:var(--muted);margin:-4px 0 0}
-.popIn{width:100%;text-align:left}
-.addRow{display:flex;gap:8px}
+.hint{font-size:12px;color:var(--muted);margin:0}
+.wide{width:100%;text-align:left}
 #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--page);padding:8px 14px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none}
 #toast.show{opacity:1}
 @media (max-width:820px){
   body{overflow:auto}
   #app{height:auto}
   main{grid-template-columns:1fr}
-  #sidebar{border-right:0;border-bottom:1px solid var(--hair);max-height:none;overflow:visible}
+  #sidebar{border-right:0;border-bottom:1px solid var(--hair);overflow:visible}
   #chartArea{height:70vh}
   header h1 small{display:none}
 }
@@ -125,21 +82,34 @@ main{display:grid;grid-template-columns:380px 1fr;min-height:0}
         <option value="births">Births per year</option>
         <option value="deaths">Deaths per year</option>
         <option value="median">Median age</option>
-        <option value="over65">Share aged 65+</option>
+        <option value="retired">Share past retirement age</option>
         <option value="mvp">MVP ratio</option>
       </select>
     </div>
     <button class="btn" id="share">Copy share link</button>
-    <button class="btn" id="reset">Load examples</button>
+    <button class="btn" id="reset">Reset</button>
   </header>
   <main>
     <aside id="sidebar">
-      <div id="pops"></div>
-      <div class="addRow"><button class="btn primary" id="add">+ Add population</button></div>
+      <div id="summary"></div>
+      <div class="row2">
+        <div class="prop">
+          <div class="lab"><span class="t">Population today</span></div>
+          <input id="popIn" class="mono wide" type="text" aria-label="Population today">
+        </div>
+        <div class="prop">
+          <div class="lab"><span class="t">Retirement age</span></div>
+          <input id="retireIn" class="mono wide" type="number" min="40" max="150" step="1" aria-label="Retirement age">
+        </div>
+      </div>
+      <div class="prop">
+        <div class="lab"><span class="t">Age profile</span><span class="v">how many young vs old today</span></div>
+        <div class="seg" id="profileSeg"></div>
+      </div>
+      <div id="curves"></div>
       <p class="hint">Every change updates the chart straight away. Drag the points on the small graphs to shape how each value changes over time. Double-click a line to add a point, and drag a point off its graph to remove it.</p>
     </aside>
     <section id="chartArea">
-      <div id="legend"></div>
       <div id="chartWrap"><canvas id="chart"></canvas><div id="tip"></div></div>
     </section>
   </main>
@@ -153,8 +123,8 @@ main{display:grid;grid-template-columns:380px 1fr;min-height:0}
 // ---------- constants ----------
 const YEAR0 = new Date().getFullYear();
 const AGES = 171;            // 0..170, last bin is 170+ (room for a life expectancy of 150)
+const WORK_START = 17;       // first working age
 const FEMALE_SHARE = 0.49;
-const SERIES = 8;
 
 const PROFILES = {
   young:    { label: 'Young',    r: 0.028 },
@@ -198,9 +168,6 @@ function niceStep(range, target) {
 function niceCeil(v) { if (v <= 0) return 1; const p = Math.pow(10, Math.floor(Math.log10(v))); for (const f of [1, 2, 5, 10]) if (f * p >= v) return f * p; return 10 * p; }
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-const seriesColor = slot => css('--s' + (slot + 1));
-let uid = 1;
-const newId = () => 'p' + (uid++) + '-' + Math.random().toString(36).slice(2, 6);
 
 // Monotone cubic (Fritsch–Carlson) through points sorted by t in [0,1]
 function interpolator(pts) {
@@ -259,14 +226,17 @@ function stablePyramid(total, r, q) {
   return n;
 }
 
-function simulate(p, horizon) {
-  const fert = interpolator(p.fert), life = interpolator(p.life), mig = interpolator(p.mig);
-  const out = { pop: [], births: [], deaths: [], median: [], over65: [], mvp: [] };
-  let n = stablePyramid(p.pop, PROFILES[p.profile].r, mortality(life(0)));
+function simulate(st) {
+  const horizon = st.horizon, retire = st.retire;
+  const fert = interpolator(st.fert), life = interpolator(st.life), mig = interpolator(st.mig);
+  const out = { pop: [], births: [], deaths: [], median: [], retired: [], mvp: [] };
+  let n = stablePyramid(st.pop, PROFILES[st.profile].r, mortality(life(0)));
   const record = (n, births, deaths) => {
-    let tot = 0, old = 0, work = 0; for (let a = 0; a < AGES; a++) { tot += n[a]; if (a >= 65) old += n[a]; else if (a >= 17) work += n[a]; }
+    let tot = 0, old = 0, work = 0;
+    for (let a = 0; a < AGES; a++) { tot += n[a]; if (a >= retire) old += n[a]; else if (a >= WORK_START) work += n[a]; }
     let acc = 0, med = 0; for (let a = 0; a < AGES; a++) { if (acc + n[a] >= tot / 2) { med = a + (tot / 2 - acc) / Math.max(n[a], 1e-9); break; } acc += n[a]; }
-    out.pop.push(tot); out.births.push(births); out.deaths.push(deaths); out.median.push(med); out.over65.push(tot > 0 ? old / tot : 0); out.mvp.push(work > 0 ? old / work : 0);
+    out.pop.push(tot); out.births.push(births); out.deaths.push(deaths); out.median.push(med);
+    out.retired.push(tot > 0 ? old / tot : 0); out.mvp.push(work > 0 ? old / work : 0);
   };
   record(n, NaN, NaN);
   for (let y = 1; y <= horizon; y++) {
@@ -285,42 +255,33 @@ function simulate(p, horizon) {
 }
 
 // ---------- state ----------
-const examples = () => ({
-  horizon: 75, metric: 'pop',
-  pops: [
-    { id: newId(), name: 'United Kingdom', slot: 0, visible: true, open: true, pop: 68e6, profile: 'balanced',
-      fert: [{ t: 0, v: 1.5 }, { t: 1, v: 1.5 }], life: [{ t: 0, v: 81 }, { t: 1, v: 86 }], mig: [{ t: 0, v: 300e3 }, { t: 1, v: 300e3 }] },
-    { id: newId(), name: 'Japan', slot: 1, visible: true, open: false, pop: 124e6, profile: 'older',
-      fert: [{ t: 0, v: 1.2 }, { t: 1, v: 1.2 }], life: [{ t: 0, v: 85 }, { t: 1, v: 89 }], mig: [{ t: 0, v: 150e3 }, { t: 1, v: 150e3 }] },
-    { id: newId(), name: 'Nigeria', slot: 2, visible: true, open: false, pop: 230e6, profile: 'young',
-      fert: [{ t: 0, v: 4.5 }, { t: 0.5, v: 3.2 }, { t: 1, v: 2.3 }], life: [{ t: 0, v: 55 }, { t: 1, v: 70 }], mig: [{ t: 0, v: -60e3 }, { t: 1, v: -60e3 }] },
-  ],
+const defaults = () => ({
+  horizon: 75, metric: 'pop', pop: 70e6, profile: 'balanced', retire: 65,
+  fert: [{ t: 0, v: 1.6 }, { t: 1, v: 1.6 }],
+  life: [{ t: 0, v: 82 }, { t: 1, v: 82 }],
+  mig:  [{ t: 0, v: 0 }, { t: 1, v: 0 }],
 });
-let state = null;
-const results = new Map();  // pop id -> simulate() output
-const editors = new Map();  // pop id -> {fert,life,mig} CurveEditor
+let state = null, result = null;
+const editors = {};
 
+function valid(s) { return s && typeof s === 'object' && Array.isArray(s.fert) && Array.isArray(s.life) && Array.isArray(s.mig) && isFinite(s.pop); }
 function load() {
   const h = location.hash.match(/^#s=(.+)$/);
-  if (h) { try { state = JSON.parse(decodeURIComponent(escape(atob(h[1])))); history.replaceState(null, '', location.pathname); saveLocal(); return; } catch (e) { /* fall through */ } }
-  try { const s = localStorage.getItem('yaps.v1'); if (s) { state = JSON.parse(s); return; } } catch (e) { /* ignore */ }
-  state = examples();
+  if (h) { try { const s = JSON.parse(decodeURIComponent(escape(atob(h[1])))); history.replaceState(null, '', location.pathname); if (valid(s)) { state = s; saveLocal(); return; } } catch (e) { /* fall through */ } }
+  try { const s = JSON.parse(localStorage.getItem('yaps.v2')); if (valid(s)) { state = s; return; } } catch (e) { /* ignore */ }
+  state = defaults();
 }
 let saveTimer = null;
-function saveLocal() { clearTimeout(saveTimer); saveTimer = setTimeout(() => { try { localStorage.setItem('yaps.v1', JSON.stringify(state)); } catch (e) { /* ignore */ } }, 200); }
+function saveLocal() { clearTimeout(saveTimer); saveTimer = setTimeout(() => { try { localStorage.setItem('yaps.v2', JSON.stringify(state)); } catch (e) { /* ignore */ } }, 200); }
 function shareUrl() { return location.origin + location.pathname + '#s=' + btoa(unescape(encodeURIComponent(JSON.stringify(state)))); }
 
-function recompute(id) {
-  const ids = id ? [id] : state.pops.map(p => p.id);
-  for (const pid of ids) { const p = state.pops.find(x => x.id === pid); if (p) results.set(pid, simulate(p, state.horizon)); }
-  for (const k of [...results.keys()]) if (!state.pops.find(p => p.id === k)) results.delete(k);
-  drawChart(); renderSummaries(); saveLocal();
-}
+function recompute() { result = simulate(state); drawChart(); renderSummary(); saveLocal(); }
+function redrawEditors() { Object.values(editors).forEach(e => e.draw()); }
 
 // ---------- curve editor ----------
 class CurveEditor {
-  constructor(pop, key, canvas, onChange) {
-    this.pop = pop; this.key = key; this.spec = CURVES[key]; this.cv = canvas; this.onChange = onChange;
+  constructor(key, canvas, onChange) {
+    this.key = key; this.spec = CURVES[key]; this.cv = canvas; this.onChange = onChange;
     this.ctx = canvas.getContext('2d');
     this.pad = { l: 44, r: 12, t: 10, b: 18 };
     this.drag = null; this.hover = -1;
@@ -332,10 +293,10 @@ class CurveEditor {
     canvas.addEventListener('dblclick', e => this.add(e));
     new ResizeObserver(() => this.draw()).observe(canvas);
   }
-  get pts() { return this.pop[this.key]; }
+  get pts() { return state[this.key]; }
   bounds() {
     if (this.spec.min !== null) return [this.spec.min, this.spec.max];
-    const m = niceCeil(Math.max(this.pop.pop * 0.02, ...this.pts.map(p => Math.abs(p.v) * 1.25), 1000));
+    const m = niceCeil(Math.max(state.pop * 0.02, ...this.pts.map(p => Math.abs(p.v) * 1.25), 1000));
     return [-m, m];
   }
   geom() {
@@ -365,12 +326,12 @@ class CurveEditor {
     v = clamp(v, b[0], b[1]);
     if (interior) t = clamp(t, pts[i - 1].t + 0.02, pts[i + 1].t - 0.02); else t = p.t;
     p.t = t; p.v = this.snap(v);
-    this.draw(); this.onChange(true);
+    this.draw(); this.onChange();
   }
-  up(e) {
+  up() {
     if (!this.drag) return;
     if (this.drag.removed) this.pts.splice(this.drag.i, 1);
-    this.drag = null; this.hover = -1; this.draw(); this.onChange(false);
+    this.drag = null; this.hover = -1; this.draw(); this.onChange();
   }
   add(e) {
     const [x, y] = this.local(e); if (this.nearest(x, y) >= 0) return;
@@ -378,38 +339,33 @@ class CurveEditor {
     t = clamp(t, 0.02, 0.98); v = clamp(v, b[0], b[1]);
     const pts = this.pts; let i = pts.findIndex(p => p.t > t); if (i < 0) i = pts.length;
     if (t - pts[i - 1].t < 0.02 || pts[i].t - t < 0.02) return;
-    pts.splice(i, 0, { t, v: this.snap(v) }); this.draw(); this.onChange(false);
+    pts.splice(i, 0, { t, v: this.snap(v) }); this.draw(); this.onChange();
   }
   snap(v) { if (this.key === 'fert') return Math.round(v * 20) / 20; if (this.key === 'life') return Math.round(v * 2) / 2; const s = niceStep(this.bounds()[1], 40); return Math.round(v / s) * s; }
   preset(kind, arg) {
     const pts = this.pts, start = pts[0].v; let end = pts[pts.length - 1].v;
     if (kind === 'hold') end = start; else if (kind === 'end') end = arg; else if (kind === 'delta') end = start + arg; else if (kind === 'scale') end = start * arg;
     const b = this.bounds();
-    this.pop[this.key] = [{ t: 0, v: start }, { t: 1, v: clamp(end, b[0], b[1]) }];
-    this.draw(); this.onChange(false);
+    state[this.key] = [{ t: 0, v: start }, { t: 1, v: clamp(end, b[0], b[1]) }];
+    this.draw(); this.onChange();
   }
   draw() {
     const cv = this.cv, dpr = window.devicePixelRatio || 1, g = this.geom(); if (g.w === 0) return;
     if (cv.width !== Math.round(g.w * dpr) || cv.height !== Math.round(g.h * dpr)) { cv.width = Math.round(g.w * dpr); cv.height = Math.round(g.h * dpr); }
     const c = this.ctx; c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, g.w, g.h);
-    const b = this.bounds(), col = seriesColor(this.pop.slot), pts = this.pts;
+    const b = this.bounds(), col = css('--accent'), pts = this.pts;
     c.font = '10px "IBM Plex Mono", ui-monospace, monospace'; c.textBaseline = 'middle';
-    // grid + y labels (bottom, middle, top)
     c.strokeStyle = css('--grid'); c.lineWidth = 1; c.fillStyle = css('--muted'); c.textAlign = 'right';
     for (const f of [0, 0.5, 1]) { const y = Math.round(g.y1 - f * (g.y1 - g.y0)) + 0.5; c.beginPath(); c.moveTo(g.x0, y); c.lineTo(g.x1, y); c.stroke(); c.fillText(this.spec.fmt(b[0] + f * (b[1] - b[0])), g.x0 - 6, y); }
-    // reference line
     if (this.spec.ref !== null && this.spec.ref > b[0] && this.spec.ref < b[1]) {
       const y = Math.round(this.toPx(0, this.spec.ref, g, b)[1]) + 0.5; c.strokeStyle = css('--axis'); c.beginPath(); c.moveTo(g.x0, y); c.lineTo(g.x1, y); c.stroke();
       if (this.spec.refLabel) { c.textAlign = 'right'; c.fillText(this.spec.refLabel, g.x1 - 2, y - 7); }
     }
-    // x labels
     c.textAlign = 'left'; c.fillText(String(YEAR0), g.x0, g.y1 + 10); c.textAlign = 'right'; c.fillText(String(YEAR0 + state.horizon), g.x1, g.y1 + 10);
-    // curve
     const f = interpolator(pts); c.strokeStyle = col; c.lineWidth = 2; c.lineJoin = 'round'; c.lineCap = 'round'; c.beginPath();
     const N = Math.max(40, Math.round(g.x1 - g.x0) >> 1);
     for (let i = 0; i <= N; i++) { const t = i / N, [x, y] = this.toPx(t, clamp(f(t), b[0], b[1]), g, b); i ? c.lineTo(x, y) : c.moveTo(x, y); }
     c.stroke();
-    // points
     pts.forEach((p, i) => {
       const [x, y] = this.toPx(p.t, p.v, g, b); const removing = this.drag && this.drag.i === i && this.drag.removed;
       c.beginPath(); c.arc(x, y, 6, 0, Math.PI * 2); c.fillStyle = css('--surface'); c.fill();
@@ -426,121 +382,67 @@ class CurveEditor {
 }
 
 // ---------- sidebar ----------
-const popsEl = document.getElementById('pops');
-function curveSummary(pop, key) {
-  const s = CURVES[key], pts = pop[key], a = pts[0].v, z = pts[pts.length - 1].v, end = YEAR0 + state.horizon;
+function curveSummary(key) {
+  const s = CURVES[key], pts = state[key], a = pts[0].v, z = pts[pts.length - 1].v, end = YEAR0 + state.horizon;
   const ext = pts.reduce((m, p) => Math.abs(p.v - a) > Math.abs(m.v - a) ? p : m, pts[0]);
   const same = (x, y) => s.fmt(x) === s.fmt(y);
   if (same(a, z) && same(ext.v, a)) return `<b>${s.fmt(a)}</b> ${s.unit}, held steady`;
   if (!same(ext.v, z) && !same(ext.v, a)) return `<b>${s.fmt(a)}</b> now, ${ext.v > a ? 'peaking at' : 'dipping to'} ${s.fmt(ext.v)} around ${Math.round(YEAR0 + ext.t * state.horizon)}, then ${s.fmt(z)} by ${end}`;
   return `<b>${s.fmt(a)}</b> now, ${z > a ? 'rising' : 'falling'} to <b>${s.fmt(z)}</b> by ${end}`;
 }
-function renderSidebar() {
-  popsEl.innerHTML = ''; editors.clear();
-  for (const pop of state.pops) {
-    const card = document.createElement('div');
-    card.className = 'pop' + (pop.open ? ' open' : '') + (pop.visible ? '' : ' hidden');
-    card.style.setProperty('--c', seriesColor(pop.slot));
-    card.innerHTML = `
-      <div class="head">
-        <button class="btn icon chev" title="Expand">▸</button>
-        <input class="name" value="${escapeHtml(pop.name)}" aria-label="Population name">
-        <button class="btn icon eye" title="${pop.visible ? 'Hide on chart' : 'Show on chart'}">${pop.visible ? '●' : '○'}</button>
-        <button class="btn icon del" title="Remove">✕</button>
-      </div>
-      <div class="sum" data-sum></div>
-      <div class="body">
-        <div class="prop">
-          <div class="lab"><span class="t">Population today</span></div>
-          <input class="mono popIn" type="text" value="${fmtNum(pop.pop)}" aria-label="Population today">
-        </div>
-        <div class="prop">
-          <div class="lab"><span class="t">Age profile</span><span class="v">how many young vs old today</span></div>
-          <div class="seg" data-seg>${Object.entries(PROFILES).map(([k, v]) => `<button data-k="${k}" class="${pop.profile === k ? 'on' : ''}">${v.label}</button>`).join('')}</div>
-        </div>
-        ${Object.keys(CURVES).map(k => `
-        <div class="prop" data-curve="${k}">
-          <div class="lab"><span class="t">${CURVES[k].title}</span><span class="v" data-cs></span></div>
-          <canvas class="curve"></canvas>
-          <div class="presets">${CURVES[k].presets.map((p, i) => `<button class="btn small" data-preset="${i}">${p[0]}</button>`).join('')}</div>
-        </div>`).join('')}
-      </div>`;
-    const head = card.querySelector('.head');
-    card.querySelector('.chev').onclick = () => { pop.open = !pop.open; card.classList.toggle('open', pop.open); saveLocal(); if (pop.open) editors.get(pop.id) && Object.values(editors.get(pop.id)).forEach(e => e.draw()); };
-    head.querySelector('.name').addEventListener('input', e => { pop.name = e.target.value; renderLegend(); saveLocal(); });
-    head.querySelector('.eye').onclick = () => { pop.visible = !pop.visible; renderSidebar(); renderLegend(); drawChart(); saveLocal(); };
-    head.querySelector('.del').onclick = () => { if (state.pops.length > 1 && !confirm(`Remove ${pop.name}?`)) return; state.pops = state.pops.filter(p => p !== pop); renderSidebar(); renderLegend(); recompute(); };
-    const popIn = card.querySelector('.popIn');
-    popIn.addEventListener('change', () => { const v = parseNum(popIn.value); if (isFinite(v) && v > 0) { pop.pop = v; recompute(pop.id); Object.values(editors.get(pop.id)).forEach(e => e.draw()); } popIn.value = fmtNum(pop.pop); });
-    card.querySelector('[data-seg]').onclick = e => { const b = e.target.closest('button'); if (!b) return; pop.profile = b.dataset.k; card.querySelectorAll('[data-seg] button').forEach(x => x.classList.toggle('on', x === b)); recompute(pop.id); };
-    const eds = {};
-    for (const k of Object.keys(CURVES)) {
-      const wrap = card.querySelector(`[data-curve="${k}"]`), cs = wrap.querySelector('[data-cs]');
-      const ed = new CurveEditor(pop, k, wrap.querySelector('canvas'), () => { cs.innerHTML = curveSummary(pop, k); recompute(pop.id); });
-      cs.innerHTML = curveSummary(pop, k);
-      wrap.querySelector('.presets').onclick = e => { const b = e.target.closest('button'); if (!b) return; const p = CURVES[k].presets[+b.dataset.preset]; ed.preset(p[1], p[2]); };
-      eds[k] = ed;
-    }
-    editors.set(pop.id, eds);
-    popsEl.appendChild(card);
-  }
-  renderSummaries();
-  editors.forEach(eds => Object.values(eds).forEach(e => e.draw()));
-}
-function renderSummaries() {
-  [...popsEl.children].forEach((card, i) => {
-    const pop = state.pops[i], r = results.get(pop.id), el = card.querySelector('[data-sum]'); if (!r) return;
-    const a = r.pop[0], z = r.pop[r.pop.length - 1], ch = (z - a) / a;
-    el.innerHTML = `<b>${fmtNum(a)}</b> → <b>${fmtNum(z)}</b> by ${YEAR0 + state.horizon} (${ch >= 0 ? '+' : '−'}${Math.abs(ch * 100).toFixed(0)}%) · median age ${r.median[0].toFixed(0)} → ${r.median[r.median.length - 1].toFixed(0)}`;
-    card.querySelectorAll('[data-curve]').forEach(w => { w.querySelector('[data-cs]').innerHTML = curveSummary(pop, w.dataset.curve); });
-  });
-}
-function escapeHtml(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+const popIn = document.getElementById('popIn'), retireIn = document.getElementById('retireIn'), profileSeg = document.getElementById('profileSeg'), curvesEl = document.getElementById('curves'), summaryEl = document.getElementById('summary');
 
-document.getElementById('add').onclick = () => {
-  const used = new Set(state.pops.map(p => p.slot)); let slot = 0; while (used.has(slot) && slot < SERIES) slot++; if (slot >= SERIES) slot = state.pops.length % SERIES;
-  state.pops.forEach(p => p.open = false);
-  state.pops.push({ id: newId(), name: 'New population', slot, visible: true, open: true, pop: 10e6, profile: 'balanced',
-    fert: [{ t: 0, v: 2.0 }, { t: 1, v: 2.0 }], life: [{ t: 0, v: 75 }, { t: 1, v: 80 }], mig: [{ t: 0, v: 0 }, { t: 1, v: 0 }] });
-  renderSidebar(); renderLegend(); recompute();
-  const card = popsEl.lastElementChild; card.scrollIntoView({ block: 'nearest' }); card.querySelector('.name').select();
-};
-
-// ---------- legend ----------
-const legendEl = document.getElementById('legend');
-function renderLegend() {
-  legendEl.innerHTML = '';
-  for (const p of state.pops) {
-    const k = document.createElement('div'); k.className = 'key' + (p.visible ? '' : ' off'); k.style.setProperty('--c', seriesColor(p.slot));
-    k.innerHTML = `<span class="sw"></span><span>${escapeHtml(p.name || 'Unnamed')}</span>`;
-    k.onclick = () => { p.visible = !p.visible; renderSidebar(); renderLegend(); drawChart(); saveLocal(); };
-    legendEl.appendChild(k);
+function buildSidebar() {
+  popIn.value = fmtNum(state.pop);
+  retireIn.value = state.retire;
+  profileSeg.innerHTML = Object.entries(PROFILES).map(([k, v]) => `<button data-k="${k}" class="${state.profile === k ? 'on' : ''}">${v.label}</button>`).join('');
+  curvesEl.innerHTML = Object.keys(CURVES).map(k => `
+    <div class="prop" data-curve="${k}" style="margin-top:16px">
+      <div class="lab"><span class="t">${CURVES[k].title}</span><span class="v" data-cs></span></div>
+      <canvas class="curve"></canvas>
+      <div class="presets">${CURVES[k].presets.map((p, i) => `<button class="btn small" data-preset="${i}">${p[0]}</button>`).join('')}</div>
+    </div>`).join('');
+  for (const k of Object.keys(CURVES)) {
+    const wrap = curvesEl.querySelector(`[data-curve="${k}"]`), cs = wrap.querySelector('[data-cs]');
+    const ed = new CurveEditor(k, wrap.querySelector('canvas'), () => { cs.innerHTML = curveSummary(k); recompute(); });
+    cs.innerHTML = curveSummary(k);
+    wrap.querySelector('.presets').onclick = e => { const b = e.target.closest('button'); if (!b) return; const p = CURVES[k].presets[+b.dataset.preset]; ed.preset(p[1], p[2]); };
+    editors[k] = ed;
   }
+  redrawEditors();
 }
+function renderSummary() {
+  const r = result; if (!r) return;
+  const a = r.pop[0], z = r.pop[r.pop.length - 1], ch = (z - a) / a, end = YEAR0 + state.horizon, mvp = r.mvp[r.mvp.length - 1];
+  summaryEl.innerHTML = `<b>${fmtNum(a)}</b> people today → <b>${fmtNum(z)}</b> in ${end} (${ch >= 0 ? '+' : '−'}${Math.abs(ch * 100).toFixed(0)}%). Median age ${r.median[0].toFixed(0)} → ${r.median[r.median.length - 1].toFixed(0)}. MVP ratio ${r.mvp[0].toFixed(2)} → <b>${mvp.toFixed(2)}</b>${mvp >= 1 ? ', past the threshold' : ''}.`;
+  curvesEl.querySelectorAll('[data-curve]').forEach(w => { w.querySelector('[data-cs]').innerHTML = curveSummary(w.dataset.curve); });
+}
+popIn.addEventListener('change', () => { const v = parseNum(popIn.value); if (isFinite(v) && v > 0) { state.pop = v; recompute(); redrawEditors(); } popIn.value = fmtNum(state.pop); });
+retireIn.addEventListener('change', () => { state.retire = clamp(Math.round(+retireIn.value || 65), 40, 150); retireIn.value = state.retire; recompute(); });
+profileSeg.onclick = e => { const b = e.target.closest('button'); if (!b) return; state.profile = b.dataset.k; profileSeg.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); recompute(); };
 
 // ---------- main chart ----------
 const chart = document.getElementById('chart'), cctx = chart.getContext('2d'), tip = document.getElementById('tip'), wrap = document.getElementById('chartWrap');
 const METRIC = {
-  pop: { label: 'People', fmt: fmtNum },
-  births: { label: 'Births per year', fmt: fmtNum },
-  deaths: { label: 'Deaths per year', fmt: fmtNum },
-  median: { label: 'Median age', fmt: v => v.toFixed(1) },
-  over65: { label: 'Share aged 65+', fmt: v => (v * 100).toFixed(0) + '%' },
-  mvp: { label: 'MVP ratio: people aged 65+ for every person aged 17 to 64', fmt: v => v.toFixed(2), ref: 1, refLabel: '1.00 = MVP threshold, one pensioner per working-age adult. Higher is worse.' },
+  pop: { label: () => 'People', fmt: fmtNum },
+  births: { label: () => 'Births per year', fmt: fmtNum },
+  deaths: { label: () => 'Deaths per year', fmt: fmtNum },
+  median: { label: () => 'Median age', fmt: v => v.toFixed(1) },
+  retired: { label: () => `Share aged ${state.retire} and over`, fmt: v => (v * 100).toFixed(0) + '%' },
+  mvp: { label: () => `MVP ratio: people aged ${state.retire}+ for every person aged ${WORK_START} to ${state.retire - 1}`, fmt: v => v.toFixed(2), ref: 1, refLabel: '1.00 = MVP threshold, one retiree per working-age adult. Higher is worse.' },
 };
 let hoverX = null, chartGeom = null;
 function drawChart() {
-  const dpr = window.devicePixelRatio || 1, r = wrap.getBoundingClientRect(), W = r.width, H = r.height; if (!W || !H) return;
+  const dpr = window.devicePixelRatio || 1, r = wrap.getBoundingClientRect(), W = r.width, H = r.height; if (!W || !H || !result) return;
   if (chart.width !== Math.round(W * dpr) || chart.height !== Math.round(H * dpr)) { chart.width = Math.round(W * dpr); chart.height = Math.round(H * dpr); }
   const c = cctx; c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, W, H);
-  const m = state.metric, mt = METRIC[m], pad = { l: 64, r: 24, t: 20, b: 34 }, x0 = pad.l, x1 = W - pad.r, y0 = pad.t, y1 = H - pad.b;
-  const vis = state.pops.filter(p => p.visible && results.has(p.id));
-  let max = 0; for (const p of vis) for (const v of results.get(p.id)[m]) if (isFinite(v) && v > max) max = v;
+  const m = state.metric, mt = METRIC[m], d = result[m], pad = { l: 64, r: 24, t: 28, b: 34 }, x0 = pad.l, x1 = W - pad.r, y0 = pad.t, y1 = H - pad.b;
+  let max = 0; for (const v of d) if (isFinite(v) && v > max) max = v;
   if (max <= 0) max = 1;
   if (mt.ref) max = Math.max(max, mt.ref * 1.15);
   const step = niceStep(max, 5), ymax = Math.ceil(max / step) * step;
   const N = state.horizon, X = i => x0 + i / N * (x1 - x0), Y = v => y1 - v / ymax * (y1 - y0);
-  chartGeom = { x0, x1, y0, y1, X, Y };
+  chartGeom = { x0, x1 };
   c.font = '11px "IBM Plex Mono", ui-monospace, monospace'; c.textBaseline = 'middle'; c.fillStyle = css('--muted'); c.strokeStyle = css('--grid'); c.lineWidth = 1;
   for (let v = 0; v <= ymax + 1e-9; v += step) { const y = Math.round(Y(v)) + 0.5; c.beginPath(); c.moveTo(x0, y); c.lineTo(x1, y); c.stroke(); c.textAlign = 'right'; c.fillText(mt.fmt(v), x0 - 8, y); }
   c.strokeStyle = css('--axis'); c.beginPath(); c.moveTo(x0, Math.round(y1) + 0.5); c.lineTo(x1, Math.round(y1) + 0.5); c.stroke();
@@ -548,21 +450,21 @@ function drawChart() {
   const xs = niceStep(N, 8); c.textAlign = 'center'; c.textBaseline = 'top';
   for (let i = 0; i <= N; i += xs) if (i === N || N - i >= xs / 2) c.fillText(String(YEAR0 + i), X(i), y1 + 8);
   if (N % xs) c.fillText(String(YEAR0 + N), X(N), y1 + 8);
-  c.textAlign = 'left'; c.textBaseline = 'middle'; c.font = '500 11px "IBM Plex Sans", system-ui, sans-serif'; c.fillStyle = css('--ink-2'); c.fillText(mt.label, x0, y0 - 10);
-  for (const p of vis) {
-    const d = results.get(p.id)[m], col = seriesColor(p.slot); c.strokeStyle = col; c.lineWidth = 2; c.lineJoin = 'round'; c.lineCap = 'round'; c.beginPath(); let started = false;
-    for (let i = 0; i <= N; i++) { if (!isFinite(d[i])) continue; const x = X(i), y = Y(d[i]); started ? c.lineTo(x, y) : c.moveTo(x, y); started = true; }
-    c.stroke();
-    const last = d[N]; if (isFinite(last)) { c.beginPath(); c.arc(X(N), Y(last), 6, 0, Math.PI * 2); c.fillStyle = css('--surface'); c.fill(); c.beginPath(); c.arc(X(N), Y(last), 4, 0, Math.PI * 2); c.fillStyle = col; c.fill(); }
-  }
+  c.textAlign = 'left'; c.textBaseline = 'middle'; c.font = '500 12px "IBM Plex Sans", system-ui, sans-serif'; c.fillStyle = css('--ink-2'); c.fillText(mt.label(), x0, y0 - 14);
+  const col = css('--accent');
+  c.strokeStyle = col; c.lineWidth = 2; c.lineJoin = 'round'; c.lineCap = 'round'; c.beginPath(); let started = false;
+  for (let i = 0; i <= N; i++) { if (!isFinite(d[i])) continue; const x = X(i), y = Y(d[i]); started ? c.lineTo(x, y) : c.moveTo(x, y); started = true; }
+  c.stroke();
+  const last = d[N]; if (isFinite(last)) { c.beginPath(); c.arc(X(N), Y(last), 6, 0, Math.PI * 2); c.fillStyle = css('--surface'); c.fill(); c.beginPath(); c.arc(X(N), Y(last), 4, 0, Math.PI * 2); c.fillStyle = col; c.fill(); }
   if (hoverX !== null) {
-    const i = clamp(Math.round((hoverX - x0) / (x1 - x0) * N), 0, N), x = Math.round(X(i)) + 0.5;
+    const i = clamp(Math.round((hoverX - x0) / (x1 - x0) * N), 0, N), x = Math.round(X(i)) + 0.5, v = d[i];
     c.strokeStyle = css('--axis'); c.beginPath(); c.moveTo(x, y0); c.lineTo(x, y1); c.stroke();
-    const rows = vis.map(p => ({ p, v: results.get(p.id)[m][i] })).filter(r => isFinite(r.v)).sort((a, b) => b.v - a.v);
-    for (const rr of rows) { c.beginPath(); c.arc(X(i), Y(rr.v), 5.5, 0, Math.PI * 2); c.fillStyle = css('--surface'); c.fill(); c.beginPath(); c.arc(X(i), Y(rr.v), 3.5, 0, Math.PI * 2); c.fillStyle = seriesColor(rr.p.slot); c.fill(); }
-    tip.innerHTML = `<div class="yr">${YEAR0 + i}</div>` + rows.map(rr => `<div class="row"><span class="l"><span class="dot" style="--c:${seriesColor(rr.p.slot)}"></span>${escapeHtml(rr.p.name)}</span><span class="mono">${mt.fmt(rr.v)}</span></div>`).join('');
-    tip.style.display = 'block';
-    const tw = tip.offsetWidth; tip.style.left = (X(i) + 14 + tw > W ? X(i) - 14 - tw : X(i) + 14) + 'px'; tip.style.top = Math.max(8, Math.min(H - tip.offsetHeight - 8, y0 + 8)) + 'px';
+    if (isFinite(v)) {
+      c.beginPath(); c.arc(X(i), Y(v), 5.5, 0, Math.PI * 2); c.fillStyle = css('--surface'); c.fill(); c.beginPath(); c.arc(X(i), Y(v), 3.5, 0, Math.PI * 2); c.fillStyle = col; c.fill();
+      tip.innerHTML = `<span class="yr">${YEAR0 + i}</span><span class="mono">${mt.fmt(v)}</span>`;
+      tip.style.display = 'block';
+      const tw = tip.offsetWidth; tip.style.left = (X(i) + 14 + tw > W ? X(i) - 14 - tw : X(i) + 14) + 'px'; tip.style.top = clamp(Y(v) - 14, 8, H - tip.offsetHeight - 8) + 'px';
+    } else tip.style.display = 'none';
   } else tip.style.display = 'none';
 }
 wrap.addEventListener('pointermove', e => { const r = wrap.getBoundingClientRect(); const x = e.clientX - r.left; hoverX = chartGeom && x >= chartGeom.x0 - 6 && x <= chartGeom.x1 + 6 ? x : null; drawChart(); });
@@ -571,27 +473,23 @@ new ResizeObserver(() => drawChart()).observe(wrap);
 
 // ---------- header controls ----------
 const horizonEl = document.getElementById('horizon'), metricEl = document.getElementById('metric');
-horizonEl.addEventListener('change', () => { const v = clamp(Math.round(+horizonEl.value || 75), 10, 200); horizonEl.value = v; state.horizon = v; recompute(); editors.forEach(eds => Object.values(eds).forEach(e => e.draw())); });
+horizonEl.addEventListener('change', () => { const v = clamp(Math.round(+horizonEl.value || 75), 10, 200); horizonEl.value = v; state.horizon = v; recompute(); redrawEditors(); });
 metricEl.addEventListener('change', () => { state.metric = metricEl.value; drawChart(); saveLocal(); });
 document.getElementById('share').onclick = async () => {
   const url = shareUrl();
   try { await navigator.clipboard.writeText(url); toast('Link copied. Anyone opening it sees exactly this set-up.'); }
   catch (e) { prompt('Copy this link:', url); }
 };
-document.getElementById('reset').onclick = () => { if (!confirm('Replace everything with the example populations?')) return; state = examples(); init(); toast('Examples loaded'); };
+document.getElementById('reset').onclick = () => { if (!confirm('Reset everything to the factory defaults?')) return; state = defaults(); init(); toast('Reset to defaults'); };
 let toastTimer = null;
 function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2400); }
 
-// redraw on theme change so canvas colors follow the tokens
-matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { renderSidebar(); renderLegend(); drawChart(); });
-new MutationObserver(() => { renderSidebar(); renderLegend(); drawChart(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-
 function init() {
   horizonEl.value = state.horizon; metricEl.value = state.metric;
-  renderSidebar(); renderLegend(); recompute();
+  buildSidebar(); recompute();
 }
 load();
-document.fonts && document.fonts.ready.then(() => { drawChart(); editors.forEach(eds => Object.values(eds).forEach(e => e.draw())); });
+document.fonts && document.fonts.ready.then(() => { drawChart(); redrawEditors(); });
 init();
 })();
 </script>
