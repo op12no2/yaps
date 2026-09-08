@@ -17,13 +17,14 @@ Open the page. It starts with a plain, flat set-up: 70 million people, an age pr
 
 The left-hand panel holds the inputs. The chart fills the rest of the screen.
 
+- **Start year** (top bar) is the calendar year the scenario begins in. It only affects the labels: the model itself does not know what year it is, so a saved scenario is not tied to any date. It starts at the current year.
 - **Years ahead** (top bar) is a slider from 10 to 200 years.
 - **Copy share link** puts your entire set-up into the page address and copies it. Anyone who opens that link sees exactly what you see.
 - **Reset** throws away your changes and goes back to the factory defaults. Click it twice: the first click arms it for three seconds, the second does it.
 
 ## Reading the chart
 
-Time runs in years from the start, year 0 to however far ahead you set, rather than calendar dates. A scenario is not tied to any particular year, so the same set-up describes a country in 2026 or a colony in 2200.
+The years along the bottom are the start year plus however far ahead you set. They are labels only. Nothing in the model depends on the date, so the same set-up describes a country in 2026 or a colony in 2200, and the start year slider just changes what the axis says.
 
 The chips above the chart pick what it shows. One is active at a time, so the vertical axis is always in real units for that measure: people, people per year, years, a percentage, or the ratio.
 
@@ -39,11 +40,11 @@ At the top of the panel is a one-line summary: population at the start, populati
 
 - **Population.** A slider from 100 thousand to 12 billion. It moves in proportional steps, so a small town and the whole planet are both within reach without the low end being cramped.
 - **Age profile.** A graph of how many people there are at each age at the start, from 0 to 100 along the bottom. Drag it into shape, or click Young, Balanced or Older to load a starting shape. Balanced is roughly the UK, with its baby-boom bump in the late fifties. Young is a country like Nigeria, Older is a country like Japan. It matters a lot: an older population keeps shrinking for decades even if fertility recovers, because there are fewer people of parenting age.
-- **Five more small graphs** for fertility, life expectancy, start of working age, retirement age and net migration, each running from year 0 to the end of the projection. See the next section.
+- **Five more small graphs** for fertility, life expectancy, start of working age, retirement age and net migration, each running from the start year to the end of the projection. See the next section.
 
 ## The small graphs
 
-All six inputs use the same kind of graph. The first, the age profile, runs across ages 0 to 100 and its height is how many people there are at that age. The other five run from year 0 (left edge) to the last year of the projection (right edge), and their height at any year is the value used for that year. Either way the line *is* the setting.
+All six inputs use the same kind of graph. The first, the age profile, runs across ages 0 to 100 and its height is how many people there are at that age. The other five run from the start year (left edge) to the last year of the projection (right edge), and their height at any year is the value used for that year. Either way the line *is* the setting.
 
 Every graph starts flat, with a point at each end.
 
@@ -54,7 +55,7 @@ Every graph starts flat, with a point at each end.
 
 The curve between points is smooth and never overshoots, so two or three points are enough for any realistic shape: a steady decline, a fall that levels off, a bump that fades.
 
-Above each graph is a sentence describing the current shape, for example "4.5 at the start, falling to 2.3 by year 75". If the sentence says what you meant, the graph is right.
+Above each graph is a sentence describing the current shape, for example "4.5 in 2026, falling to 2.3 by 2101". If the sentence says what you meant, the graph is right.
 
 ### Age profile
 
