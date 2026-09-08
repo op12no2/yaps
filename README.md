@@ -17,7 +17,7 @@ Open the page. It starts with a plain, flat set-up: 70 million people, a balance
 
 The left-hand panel holds the inputs. The chart fills the rest of the screen.
 
-- **Years ahead** (top bar) sets how far into the future to project.
+- **Years ahead** (top bar) is a slider from 10 to 200 years.
 - **Copy share link** puts your entire set-up into the page address and copies it. Anyone who opens that link sees exactly what you see.
 - **Reset** throws away your changes and goes back to the factory defaults.
 
@@ -33,7 +33,7 @@ Hover anywhere on the chart for the exact values in that year. The active chip i
 
 At the top of the panel is a one-line summary: population today, population at the end of the projection, the percentage change, how the median age moves, and where the MVP ratio ends up.
 
-- **Population today.** Type a number however you like: `68m`, `68 million`, `68,000,000` and `0.068b` all work.
+- **Population today.** A slider from 100 thousand to 2 billion. It moves in proportional steps, so small towns and whole continents are both within reach without the low end being cramped.
 - **Age profile.** A three-way choice: Young, Balanced or Older. This is a rough description of how many children versus pensioners there are today. A country like Nigeria is Young, most of Western Europe is Balanced, Japan is Older. It matters a lot: an Older population keeps shrinking for decades even if fertility recovers, because there are fewer people of parenting age.
 - **Four small graphs** for fertility, life expectancy, retirement age and net migration. See the next section.
 

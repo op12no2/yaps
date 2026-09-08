@@ -30,7 +30,15 @@ header h1 small{font-weight:400;color:var(--ink-2);margin-left:8px}
 .field label{font-size:12px;text-transform:uppercase;letter-spacing:.06em}
 input[type=number],input[type=text],select{background:var(--surface-2);border:1px solid transparent;border-radius:6px;padding:6px 8px;outline:none}
 input:focus-visible,select:focus-visible,button:focus-visible{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent)}
-input[type=number]{width:72px;text-align:right}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:22px;background:transparent;margin:0;cursor:pointer}
+input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:var(--surface-3)}
+input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:var(--surface-3)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:16px;height:16px;border-radius:50%;background:var(--accent);border:2px solid var(--surface);margin-top:-6px}
+input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--accent);border:2px solid var(--surface)}
+input[type=range]:focus-visible{outline:none}
+input[type=range]:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 35%,transparent)}
+header input[type=range]{width:160px}
+.field .val{min-width:2.4em;color:var(--ink)}
 .btn{background:var(--surface-2);border:1px solid transparent;border-radius:6px;padding:6px 12px;cursor:pointer;white-space:nowrap}
 .btn:hover{background:var(--surface-3)}
 
@@ -83,7 +91,7 @@ main{display:grid;grid-template-columns:380px 1fr;min-height:0}
   <header>
     <h1>YAPS <small>yet another population simulator</small></h1>
     <div class="spacer"></div>
-    <div class="field"><label for="horizon">Years ahead</label><input id="horizon" class="mono" type="number" min="10" max="200" step="5" value="75"></div>
+    <div class="field"><label for="horizon">Years ahead</label><input id="horizon" type="range" min="10" max="200" step="5" value="75"><span id="horizonVal" class="mono val"></span></div>
     <button class="btn" id="share">Copy share link</button>
     <button class="btn" id="reset">Reset</button>
   </header>
@@ -91,8 +99,8 @@ main{display:grid;grid-template-columns:380px 1fr;min-height:0}
     <aside id="sidebar">
       <div id="summary"></div>
       <div class="prop">
-        <div class="lab"><span class="t">Population today</span></div>
-        <input id="popIn" class="mono wide" type="text" aria-label="Population today">
+        <div class="lab"><span class="t">Population today</span><span class="v"><b id="popVal" class="mono"></b> people</span></div>
+        <input id="popIn" type="range" min="0" max="1000" step="1" aria-label="Population today">
       </div>
       <div class="prop">
         <div class="lab"><span class="t">Age profile</span><span class="v">how many young vs old today</span></div>
@@ -144,13 +152,6 @@ function fmtNum(n) {
   if (a >= 1e6) return trim((n / 1e6).toFixed(a >= 1e7 ? 1 : 2)) + 'M';
   if (a >= 1e3) return trim((n / 1e3).toFixed(a >= 1e4 ? 0 : 1)) + 'k';
   return Math.round(n).toString();
-}
-function parseNum(s) {
-  s = String(s).trim().toLowerCase().replace(/,/g, '').replace(/\s+/g, '');
-  const m = s.match(/^([+-]?\d*\.?\d+)\s*(k|m|b|bn|thousand|million|billion)?$/);
-  if (!m) return NaN;
-  const mult = { k: 1e3, thousand: 1e3, m: 1e6, million: 1e6, b: 1e9, bn: 1e9, billion: 1e9 }[m[2]] || 1;
-  return parseFloat(m[1]) * mult;
 }
 function niceStep(range, target) {
   const raw = range / target, p = Math.pow(10, Math.floor(Math.log10(raw)));
@@ -381,10 +382,13 @@ function curveSummary(key) {
   if (!same(ext.v, z) && !same(ext.v, a)) return `<b>${s.fmt(a)}</b> now, ${ext.v > a ? 'peaking at' : 'dipping to'} ${s.fmt(ext.v)} around ${Math.round(YEAR0 + ext.t * state.horizon)}, then ${s.fmt(z)} by ${end}`;
   return `<b>${s.fmt(a)}</b> now, ${z > a ? 'rising' : 'falling'} to <b>${s.fmt(z)}</b> by ${end}`;
 }
-const popIn = document.getElementById('popIn'), profileSeg = document.getElementById('profileSeg'), curvesEl = document.getElementById('curves'), summaryEl = document.getElementById('summary');
+const POP_MIN = 1e5, POP_MAX = 2e9;
+const popFromSlider = t => { const v = POP_MIN * Math.pow(POP_MAX / POP_MIN, t / 1000); const p = Math.pow(10, Math.floor(Math.log10(v)) - 1); return Math.round(v / p) * p; };
+const sliderFromPop = v => Math.round(Math.log(clamp(v, POP_MIN, POP_MAX) / POP_MIN) / Math.log(POP_MAX / POP_MIN) * 1000);
+const popIn = document.getElementById('popIn'), popVal = document.getElementById('popVal'), profileSeg = document.getElementById('profileSeg'), curvesEl = document.getElementById('curves'), summaryEl = document.getElementById('summary');
 
 function buildSidebar() {
-  popIn.value = fmtNum(state.pop);
+  popIn.value = sliderFromPop(state.pop); popVal.textContent = fmtNum(state.pop);
   profileSeg.innerHTML = Object.entries(PROFILES).map(([k, v]) => `<button data-k="${k}" class="${state.profile === k ? 'on' : ''}">${v.label}</button>`).join('');
   curvesEl.innerHTML = Object.keys(CURVES).map(k => `
     <div class="prop section" data-curve="${k}">
@@ -405,7 +409,7 @@ function renderSummary() {
   summaryEl.innerHTML = `<b>${fmtNum(a)}</b> people today → <b>${fmtNum(z)}</b> in ${end} (${ch >= 0 ? '+' : '−'}${Math.abs(ch * 100).toFixed(0)}%). Median age ${r.median[0].toFixed(0)} → ${r.median[r.median.length - 1].toFixed(0)}. MVP ratio ${r.mvp[0].toFixed(2)} → <b>${mvp.toFixed(2)}</b>${mvp >= 1 ? ', past the threshold' : ''}.`;
   curvesEl.querySelectorAll('[data-curve]').forEach(w => { w.querySelector('[data-cs]').innerHTML = curveSummary(w.dataset.curve); });
 }
-popIn.addEventListener('change', () => { const v = parseNum(popIn.value); if (isFinite(v) && v > 0) { state.pop = v; recompute(); redrawEditors(); } popIn.value = fmtNum(state.pop); });
+popIn.addEventListener('input', () => { state.pop = popFromSlider(+popIn.value); popVal.textContent = fmtNum(state.pop); recompute(); redrawEditors(); });
 profileSeg.onclick = e => { const b = e.target.closest('button'); if (!b) return; state.profile = b.dataset.k; profileSeg.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); recompute(); };
 
 // ---------- main chart ----------
@@ -477,8 +481,8 @@ wrap.addEventListener('pointerleave', () => { hoverX = null; drawChart(); });
 new ResizeObserver(() => drawChart()).observe(wrap);
 
 // ---------- header controls ----------
-const horizonEl = document.getElementById('horizon');
-horizonEl.addEventListener('change', () => { const v = clamp(Math.round(+horizonEl.value || 75), 10, 200); horizonEl.value = v; state.horizon = v; recompute(); redrawEditors(); });
+const horizonEl = document.getElementById('horizon'), horizonVal = document.getElementById('horizonVal');
+horizonEl.addEventListener('input', () => { state.horizon = +horizonEl.value; horizonVal.textContent = state.horizon; recompute(); redrawEditors(); });
 document.getElementById('share').onclick = async () => {
   const url = shareUrl();
   try { await navigator.clipboard.writeText(url); toast('Link copied. Anyone opening it sees exactly this set-up.'); }
@@ -489,7 +493,7 @@ let toastTimer = null;
 function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2400); }
 
 function init() {
-  horizonEl.value = state.horizon;
+  horizonEl.value = state.horizon; horizonVal.textContent = state.horizon;
   buildSidebar(); renderLegend(); recompute();
 }
 load();
