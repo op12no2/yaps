@@ -13,7 +13,7 @@ It is a single `index.html` file. No install, no build step, no server. Open it 
 
 ## Getting started
 
-Open the page. It starts with a plain, flat set-up: 70 million people, a balanced age profile, working age from 17 to 65, fertility held at 1.6, life expectancy held at 82 and no migration. Everything is yours to change.
+Open the page. It starts with a plain, flat set-up: 70 million people, an age profile roughly like the UK's today, working age from 17 to 65, fertility held at 1.6, life expectancy held at 82 and no migration. Everything is yours to change.
 
 The left-hand panel holds the inputs. The chart fills the rest of the screen.
 
@@ -36,12 +36,12 @@ Hover anywhere on the chart for the exact values in that year. The active chip i
 At the top of the panel is a one-line summary: population today, population at the end of the projection, the percentage change, how the median age moves, and where the MVP ratio ends up.
 
 - **Population today.** A slider from 100 thousand to 12 billion. It moves in proportional steps, so a small town and the whole planet are both within reach without the low end being cramped.
-- **Age profile.** A three-way choice: Young, Balanced or Older. This is a rough description of how many children versus pensioners there are today. A country like Nigeria is Young, most of Western Europe is Balanced, Japan is Older. It matters a lot: an Older population keeps shrinking for decades even if fertility recovers, because there are fewer people of parenting age.
-- **Five small graphs** for fertility, life expectancy, start of working age, retirement age and net migration. See the next section.
+- **Age profile today.** A graph of how many people there are at each age right now, from 0 to 100 along the bottom. Drag it into shape, or click Young, Balanced or Older to load a starting shape. Balanced is roughly the UK, with its baby-boom bump in the late fifties. Young is a country like Nigeria, Older is a country like Japan. It matters a lot: an older population keeps shrinking for decades even if fertility recovers, because there are fewer people of parenting age.
+- **Five more small graphs** for fertility, life expectancy, start of working age, retirement age and net migration, each running from today into the future. See the next section.
 
 ## The small graphs
 
-Each of the five time-varying inputs is drawn as a line running from today (left edge) to the last year of the projection (right edge). The line *is* the setting. Its height at any year is the value used for that year.
+All six inputs use the same kind of graph. The first, the age profile, runs across ages 0 to 100 and its height is how many people there are at that age. The other five run from today (left edge) to the last year of the projection (right edge), and their height at any year is the value used for that year. Either way the line *is* the setting.
 
 Every graph starts flat, with a point at each end.
 
@@ -53,6 +53,12 @@ Every graph starts flat, with a point at each end.
 The curve between points is smooth and never overshoots, so two or three points are enough for any realistic shape: a steady decline, a fall that levels off, a bump that fades.
 
 Above each graph is a sentence describing the current shape, for example "4.5 now, falling to 2.3 by 2101". If the sentence says what you meant, the graph is right.
+
+### Age profile today
+
+The vertical scale is relative, so only the shape matters: the population slider sets how many people there are in total, and the graph divides them between the ages. Hovering a point tells you what share of people are that age. The summary above the graph gives the median age and the share of children and retired people that the shape implies.
+
+A hollow marker at age 0 shows how big the newborn cohort would be at today's fertility rate. If your age-0 point sits well above or below it, the first year of the projection will have a step in births. Match them and the past blends smoothly into the future.
 
 ### Fertility
 
@@ -82,7 +88,7 @@ The simulator does not use a single growth rate. The population is tracked as 17
 2. Births are calculated from the fertility rate for that year, spread over women aged 15 to 49 with a typical age pattern that peaks in the late twenties. Half of each age group is assumed to be female.
 3. Net migrants are added or removed with a typical migrant age profile, concentrated in young adults.
 
-The starting age structure is derived from the Young / Balanced / Older choice using a stable-population approximation, with the youngest 25 years eased towards the cohort size today's fertility actually produces, so that the past blends into the projection instead of stepping. It is still the roughest part of the model and the first thing worth replacing with a real age pyramid.
+The starting age structure comes straight from the age profile graph, scaled to the population slider, with a short tail beyond age 100.
 
 Migrants join the same age groups as everyone else, so from the year they arrive they have the same fertility and mortality as the existing population.
 
@@ -110,7 +116,7 @@ Put `index.html` in a GitHub repository, turn on GitHub Pages for that repositor
 
 ## Ideas for later
 
-- A real starting age pyramid instead of the three presets.
+- Real age pyramids for a few countries and the world as one-click starting points.
 - Migration that responds to the MVP ratio: fewer arrivals and more departures as the threshold approaches.
 - More time-varying inputs using the same drag-point graphs: GDP per head, health spending, and so on.
 - Comparing two scenarios side by side.

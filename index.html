@@ -67,11 +67,11 @@ main{display:grid;grid-template-columns:380px 1fr;min-height:0}
 
 .prop{display:flex;flex-direction:column;gap:6px}
 .prop .lab{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
-.prop .lab .t{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--ink)}
+.prop .lab .t{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--ink);white-space:nowrap}
 .section{border-top:1px solid var(--hair);padding-top:14px;margin-top:16px}
 .prop .lab .v{font-size:12px;color:var(--ink-2);text-align:right}
 .prop .lab .v b{color:var(--ink);font-weight:500}
-.seg{display:flex;background:var(--surface-2);border-radius:6px;padding:2px;gap:2px}
+.seg{display:flex;background:var(--surface-2);border-radius:6px;padding:2px;gap:2px;margin-bottom:4px}
 .seg button{flex:1;border:0;background:transparent;border-radius:4px;padding:5px 4px;cursor:pointer;color:var(--ink-2);font-size:12px}
 .seg button.on{background:var(--surface-3);color:var(--ink)}
 .curve{width:100%;height:120px;display:block;touch-action:none;border-radius:6px;background:var(--surface);cursor:crosshair}
@@ -106,12 +106,8 @@ main{display:grid;grid-template-columns:380px 1fr;min-height:0}
         <div class="lab"><span class="t">Population today</span><span class="v"><b id="popVal" class="mono"></b> people</span></div>
         <input id="popIn" type="range" min="0" max="1000" step="1" aria-label="Population today">
       </div>
-      <div class="prop">
-        <div class="lab"><span class="t">Age profile</span><span class="v">how many young vs old today</span></div>
-        <div class="seg" id="profileSeg"></div>
-      </div>
       <div id="curves"></div>
-      <p class="hint">Every change updates the chart straight away. Drag the points on the small graphs to shape how each value changes over time. Double-click a line to add a point, and drag a point off its graph to remove it.</p>
+      <p class="hint">Every change updates the chart straight away. The first graph is the shape of the population by age today; the rest shape how each value changes over the years ahead. Drag the points. Double-click a line to add a point, and drag a point off its graph to remove it.</p>
     </aside>
     <section id="chartArea">
       <div id="legend"></div>
@@ -130,14 +126,19 @@ const YEAR0 = new Date().getFullYear();
 const AGES = 171;            // 0..170, last bin is 170+ (room for a life expectancy of 150)
 const FEMALE_SHARE = 0.49;
 
+// Starting shapes for the age profile graph: relative people per year of age at ages
+// 0, 15, 30, 45, 58, 70, 85, 100. Balanced is roughly the UK today (baby-boom bump near 58).
+const PYR_AGES = [0, 15, 30, 45, 58, 70, 85, 100];
 const PROFILES = {
-  young:    { label: 'Young',    r: 0.028 },
-  balanced: { label: 'Balanced', r: 0.006 },
-  older:    { label: 'Older',    r: -0.008 },
+  young:    { label: 'Young',    v: [2.8, 2.4, 1.6, 1.0, 0.6, 0.3, 0.1, 0.0] },
+  balanced: { label: 'Balanced', v: [0.95, 1.2, 1.35, 1.25, 1.4, 0.95, 0.5, 0.0] },
+  older:    { label: 'Older',    v: [0.65, 0.85, 1.0, 1.35, 1.2, 1.4, 0.7, 0.05] },
 };
+const profileShape = k => PYR_AGES.map((a, i) => ({ t: a / 100, v: PROFILES[k].v[i] }));
 
 // Curve types: what the small editors edit. min/max are display bounds.
 const CURVES = {
+  pyr:  { title: 'Age profile today', unit: '', min: 0, max: 3, ref: null, ages: true, fmt: v => v.toFixed(1) },
   fert: { title: 'Fertility', unit: 'children per woman', min: 0, max: 6, ref: 2.1, refLabel: 'replacement 2.1',
           fmt: v => v.toFixed(1) },
   life: { title: 'Life expectancy', unit: 'years', min: 40, max: 150, ref: null,
@@ -217,34 +218,24 @@ const FERT_SHAPE = (() => { const f = new Float64Array(AGES); let s = 0; for (le
 // Age pattern of migrants (sums to 1)
 const MIG_SHAPE = (() => { const f = new Float64Array(AGES); let s = 0; for (let a = 0; a <= 80; a++) { f[a] = Math.exp(-Math.pow((a - 27) / 10, 2)) + 0.15 * Math.exp(-Math.pow((a - 8) / 6, 2)); s += f[a]; } for (let a = 0; a < AGES; a++) f[a] /= s; return f; })();
 
-function stablePyramid(total, r, q) {
-  const n = new Float64Array(AGES); let l = 1, s = 0;
-  for (let a = 0; a < AGES; a++) { n[a] = Math.exp(-r * a) * l; s += n[a]; l *= (1 - q[a]); }
+// Starting pyramid straight from the age profile graph: the curve gives relative
+// numbers per year of age up to 100, a short tail covers 100+, and the whole thing
+// is scaled to the population slider.
+function pyramidFromCurve(pts, total) {
+  const f = interpolator(pts), n = new Float64Array(AGES); let s = 0;
+  for (let a = 0; a < AGES; a++) { n[a] = a <= 100 ? Math.max(0, f(a / 100)) : n[100] * Math.exp(-0.35 * (a - 100)); s += n[a]; }
+  if (s <= 0) { n[0] = 1; s = 1; }
   for (let a = 0; a < AGES; a++) n[a] *= total / s;
   return n;
 }
-// Starting pyramid: the profile's stable shape, with the youngest BLEND years eased
-// towards the cohort size today's fertility actually produces. Without this the
-// first simulated birth cohort is a step, and the step shows up as a kink in every
-// ratio exactly when it reaches working or retirement age.
-const BLEND = 25;
-function startingPyramid(total, r, q, tfr) {
-  const n = stablePyramid(total, r, q);
-  for (let pass = 0; pass < 2; pass++) {
-    let b = 0; for (let a = 15; a <= 49; a++) b += n[a] * FEMALE_SHARE * tfr * FERT_SHAPE[a];
-    const k = b * (1 - q[0] / 2) / n[0];
-    for (let a = 0; a < BLEND; a++) n[a] *= k + (1 - k) * a / BLEND;
-    let s = 0; for (let a = 0; a < AGES; a++) s += n[a];
-    for (let a = 0; a < AGES; a++) n[a] *= total / s;
-  }
-  return n;
-}
+// Births this year from a pyramid at a given fertility, as a share of the total
+function birthShare(n, tfr) { let b = 0, s = 0; for (let a = 0; a < AGES; a++) { s += n[a]; if (a >= 15 && a <= 49) b += n[a] * FEMALE_SHARE * tfr * FERT_SHAPE[a]; } return s > 0 ? b / s : 0; }
 
 function simulate(st) {
   const horizon = st.horizon;
   const fert = interpolator(st.fert), life = interpolator(st.life), mig = interpolator(st.mig), retireAt = interpolator(st.retire), workAt = interpolator(st.work);
   const out = { pop: [], births: [], deaths: [], median: [], retired: [], mvp: [], kids: [], work: [], old: [] };
-  let n = startingPyramid(st.pop, PROFILES[st.profile].r, mortality(life(0)), fert(0));
+  let n = pyramidFromCurve(st.pyr, st.pop);
   const record = (n, births, deaths, t) => {
     // Both boundaries are fractional: the cohort each falls inside is split proportionally,
     // so a moving boundary shifts people across smoothly rather than a cohort at a time.
@@ -282,7 +273,8 @@ function simulate(st) {
 
 // ---------- state ----------
 const defaults = () => ({
-  horizon: 75, metric: 'pop', pop: 70e6, profile: 'balanced',
+  horizon: 75, metric: 'pop', pop: 70e6,
+  pyr: profileShape('balanced'),
   fert: [{ t: 0, v: 1.6 }, { t: 1, v: 1.6 }],
   life: [{ t: 0, v: 82 }, { t: 1, v: 82 }],
   work: [{ t: 0, v: 17 }, { t: 1, v: 17 }],
@@ -297,6 +289,7 @@ function valid(s) {
   if (typeof s.retire === 'number') s.retire = [{ t: 0, v: s.retire }, { t: 1, v: s.retire }];
   if (!(s.metric in METRIC)) s.metric = 'pop';
   if (!Array.isArray(s.work)) s.work = defaults().work;
+  if (!Array.isArray(s.pyr)) s.pyr = profileShape(s.profile in PROFILES ? s.profile : 'balanced');
   return Array.isArray(s.retire);
 }
 function load() {
@@ -375,7 +368,9 @@ class CurveEditor {
     if (t - pts[i - 1].t < 0.02 || pts[i].t - t < 0.02) return;
     pts.splice(i, 0, { t, v: this.snap(v) }); this.draw(); this.onChange();
   }
-  snap(v) { if (this.key === 'fert') return Math.round(v * 20) / 20; if (this.key === 'life') return Math.round(v * 2) / 2; if (this.key === 'retire' || this.key === 'work') return Math.round(v); const s = niceStep(this.bounds()[1], 40); return Math.round(v / s) * s; }
+  curveSum(pts) { const f = interpolator(pts); let s = 0; for (let a = 0; a <= 100; a++) s += Math.max(0, f(a / 100)); return s; }
+  ageLabel(p) { const share = p.v / Math.max(1e-9, this.curveSum(this.pts)); return `${(share * 100).toFixed(1)}% aged ${Math.round(p.t * 100)}`; }
+  snap(v) { if (this.key === 'pyr') return Math.round(v * 20) / 20; if (this.key === 'fert') return Math.round(v * 20) / 20; if (this.key === 'life') return Math.round(v * 2) / 2; if (this.key === 'retire' || this.key === 'work') return Math.round(v); const s = niceStep(this.bounds()[1], 40); return Math.round(v / s) * s; }
   draw() {
     const cv = this.cv, dpr = window.devicePixelRatio || 1, g = this.geom(); if (g.w === 0) return;
     if (cv.width !== Math.round(g.w * dpr) || cv.height !== Math.round(g.h * dpr)) { cv.width = Math.round(g.w * dpr); cv.height = Math.round(g.h * dpr); }
@@ -383,22 +378,33 @@ class CurveEditor {
     const b = this.bounds(), col = css('--accent'), pts = this.pts;
     c.font = '10px "IBM Plex Mono", ui-monospace, monospace'; c.textBaseline = 'middle';
     c.strokeStyle = css('--grid'); c.lineWidth = 1; c.fillStyle = css('--muted'); c.textAlign = 'right';
-    for (const f of [0, 0.5, 1]) { const y = Math.round(g.y1 - f * (g.y1 - g.y0)) + 0.5; c.beginPath(); c.moveTo(g.x0, y); c.lineTo(g.x1, y); c.stroke(); c.fillText(this.spec.fmt(b[0] + f * (b[1] - b[0])), g.x0 - 6, y); }
+    for (const f of [0, 0.5, 1]) { const y = Math.round(g.y1 - f * (g.y1 - g.y0)) + 0.5; c.beginPath(); c.moveTo(g.x0, y); c.lineTo(g.x1, y); c.stroke(); if (!this.spec.ages) c.fillText(this.spec.fmt(b[0] + f * (b[1] - b[0])), g.x0 - 6, y); }
     if (this.spec.ref !== null && this.spec.ref > b[0] && this.spec.ref < b[1]) {
       const y = Math.round(this.toPx(0, this.spec.ref, g, b)[1]) + 0.5; c.strokeStyle = css('--axis'); c.beginPath(); c.moveTo(g.x0, y); c.lineTo(g.x1, y); c.stroke();
       if (this.spec.refLabel) { c.textAlign = 'right'; c.fillText(this.spec.refLabel, g.x1 - 2, y - 7); }
     }
-    c.textAlign = 'left'; c.fillText(String(YEAR0), g.x0, g.y1 + 10); c.textAlign = 'right'; c.fillText(String(YEAR0 + state.horizon), g.x1, g.y1 + 10);
+    const ages = this.spec.ages;
+    c.textAlign = 'left'; c.fillText(ages ? 'age 0' : String(YEAR0), g.x0, g.y1 + 10); c.textAlign = 'right'; c.fillText(ages ? 'age 100' : String(YEAR0 + state.horizon), g.x1, g.y1 + 10);
+    if (ages) { c.save(); c.translate(g.x0 - 14, (g.y0 + g.y1) / 2); c.rotate(-Math.PI / 2); c.textAlign = 'center'; c.fillText('fewer ← → more', 0, 0); c.restore(); c.textAlign = 'center'; for (const a of [25, 50, 75]) { const x = Math.round(this.toPx(a / 100, 0, g, b)[0]) + 0.5; c.strokeStyle = css('--grid'); c.beginPath(); c.moveTo(x, g.y0); c.lineTo(x, g.y1); c.stroke(); c.fillText(String(a), x, g.y1 + 10); } }
     const f = interpolator(pts); c.strokeStyle = col; c.lineWidth = 2; c.lineJoin = 'round'; c.lineCap = 'round'; c.beginPath();
     const N = Math.max(40, Math.round(g.x1 - g.x0) >> 1);
     for (let i = 0; i <= N; i++) { const t = i / N, [x, y] = this.toPx(t, clamp(f(t), b[0], b[1]), g, b); i ? c.lineTo(x, y) : c.moveTo(x, y); }
     c.stroke();
+    if (ages) {
+      // hollow marker at age 0: the cohort today's fertility would produce, in the graph's own units
+      const n = pyramidFromCurve(pts, 1), share = birthShare(n, interpolator(state.fert)(0));
+      const rel = share * this.curveSum(pts);
+      if (rel > b[0] && rel < b[1]) {
+        const [x, y] = this.toPx(0, rel, g, b); c.beginPath(); c.arc(x, y, 5, 0, Math.PI * 2); c.strokeStyle = css('--ink-2'); c.lineWidth = 1.5; c.stroke(); c.lineWidth = 2;
+        c.font = '10px "IBM Plex Mono", ui-monospace, monospace'; c.fillStyle = css('--muted'); c.textAlign = 'left'; c.fillText('births at today\'s fertility', x + 9, y + 13);
+      }
+    }
     pts.forEach((p, i) => {
       const [x, y] = this.toPx(p.t, p.v, g, b); const removing = this.drag && this.drag.i === i && this.drag.removed;
       c.beginPath(); c.arc(x, y, 6, 0, Math.PI * 2); c.fillStyle = css('--surface'); c.fill();
       c.beginPath(); c.arc(x, y, 4.5, 0, Math.PI * 2); c.fillStyle = removing ? css('--danger') : col; c.fill();
       if (i === this.hover || (this.drag && this.drag.i === i)) {
-        const label = removing ? 'remove' : this.spec.fmt(p.v) + ' in ' + Math.round(YEAR0 + p.t * state.horizon);
+        const label = removing ? 'remove' : ages ? this.ageLabel(p) : this.spec.fmt(p.v) + ' in ' + Math.round(YEAR0 + p.t * state.horizon);
         c.font = '500 11px "IBM Plex Sans", system-ui, sans-serif'; c.textAlign = x > (g.x0 + g.x1) / 2 ? 'right' : 'left';
         const tx = x > (g.x0 + g.x1) / 2 ? x - 10 : x + 10, ty = y < g.y0 + 14 ? y + 14 : y - 12;
         const w = c.measureText(label).width; c.fillStyle = css('--surface'); c.fillRect(c.textAlign === 'right' ? tx - w - 4 : tx - 4, ty - 8, w + 8, 16);
@@ -410,6 +416,13 @@ class CurveEditor {
 
 // ---------- sidebar ----------
 function curveSummary(key) {
+  if (key === 'pyr') {
+    const n = pyramidFromCurve(state.pyr, 1), start = interpolator(state.work)(0), retire = interpolator(state.retire)(0);
+    let acc = 0, med = 0, kids = 0, old = 0;
+    for (let a = 0; a < AGES; a++) { if (a < start) kids += n[a]; if (a >= retire) old += n[a]; }
+    for (let a = 0; a < AGES; a++) { if (acc + n[a] >= 0.5) { med = a + (0.5 - acc) / Math.max(n[a], 1e-9); break; } acc += n[a]; }
+    return `median age <b>${med.toFixed(0)}</b>, ${(kids * 100).toFixed(0)}% children, ${(old * 100).toFixed(0)}% retired`;
+  }
   const s = CURVES[key], pts = state[key], a = pts[0].v, z = pts[pts.length - 1].v, end = YEAR0 + state.horizon;
   const ext = pts.reduce((m, p) => Math.abs(p.v - a) > Math.abs(m.v - a) ? p : m, pts[0]);
   const same = (x, y) => s.fmt(x) === s.fmt(y);
@@ -420,23 +433,31 @@ function curveSummary(key) {
 const POP_MIN = 1e5, POP_MAX = 12e9;
 const popFromSlider = t => { const v = POP_MIN * Math.pow(POP_MAX / POP_MIN, t / 1000); const p = Math.pow(10, Math.floor(Math.log10(v)) - 1); return Math.round(v / p) * p; };
 const sliderFromPop = v => Math.round(Math.log(clamp(v, POP_MIN, POP_MAX) / POP_MIN) / Math.log(POP_MAX / POP_MIN) * 1000);
-const popIn = document.getElementById('popIn'), popVal = document.getElementById('popVal'), profileSeg = document.getElementById('profileSeg'), curvesEl = document.getElementById('curves'), summaryEl = document.getElementById('summary');
+const popIn = document.getElementById('popIn'), popVal = document.getElementById('popVal'), curvesEl = document.getElementById('curves'), summaryEl = document.getElementById('summary');
 
 function buildSidebar() {
   popIn.value = sliderFromPop(state.pop); popVal.textContent = fmtNum(state.pop);
-  profileSeg.innerHTML = Object.entries(PROFILES).map(([k, v]) => `<button data-k="${k}" class="${state.profile === k ? 'on' : ''}">${v.label}</button>`).join('');
   curvesEl.innerHTML = Object.keys(CURVES).map(k => `
     <div class="prop section" data-curve="${k}">
       <div class="lab"><span class="t">${CURVES[k].title}</span><span class="v" data-cs></span></div>
+      ${k === 'pyr' ? `<div class="seg" id="profileSeg">${Object.entries(PROFILES).map(([pk, v]) => `<button data-k="${pk}">${v.label}</button>`).join('')}</div>` : ''}
       <canvas class="curve"></canvas>
     </div>`).join('');
   for (const k of Object.keys(CURVES)) {
     const wrap = curvesEl.querySelector(`[data-curve="${k}"]`), cs = wrap.querySelector('[data-cs]');
-    const ed = new CurveEditor(k, wrap.querySelector('canvas'), () => { cs.innerHTML = curveSummary(k); recompute(); });
+    const ed = new CurveEditor(k, wrap.querySelector('canvas'), () => { cs.innerHTML = curveSummary(k); if (k === 'pyr') markProfile(); else if (editors.pyr) { editors.pyr.draw(); curvesEl.querySelector('[data-curve="pyr"] [data-cs]').innerHTML = curveSummary('pyr'); } recompute(); });
     cs.innerHTML = curveSummary(k);
     editors[k] = ed;
   }
+  const seg = document.getElementById('profileSeg');
+  seg.onclick = e => { const b = e.target.closest('button'); if (!b) return; state.pyr = profileShape(b.dataset.k); editors.pyr.draw(); markProfile(); curvesEl.querySelector('[data-curve="pyr"] [data-cs]').innerHTML = curveSummary('pyr'); recompute(); };
+  markProfile();
   redrawEditors();
+}
+// Highlight whichever preset the pyramid currently matches, if any
+function markProfile() {
+  const cur = JSON.stringify(state.pyr);
+  document.querySelectorAll('#profileSeg button').forEach(b => b.classList.toggle('on', JSON.stringify(profileShape(b.dataset.k)) === cur));
 }
 function renderSummary() {
   const r = result; if (!r) return;
@@ -445,7 +466,6 @@ function renderSummary() {
   curvesEl.querySelectorAll('[data-curve]').forEach(w => { w.querySelector('[data-cs]').innerHTML = curveSummary(w.dataset.curve); });
 }
 popIn.addEventListener('input', () => { state.pop = popFromSlider(+popIn.value); popVal.textContent = fmtNum(state.pop); recompute(); redrawEditors(); });
-profileSeg.onclick = e => { const b = e.target.closest('button'); if (!b) return; state.profile = b.dataset.k; profileSeg.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); recompute(); };
 
 // ---------- main chart ----------
 const chart = document.getElementById('chart'), cctx = chart.getContext('2d'), tip = document.getElementById('tip'), wrap = document.getElementById('chartWrap');
