@@ -27,6 +27,7 @@ header{display:flex;align-items:center;gap:16px;padding:0 16px;border-bottom:1px
 header h1{font-size:16px;font-weight:600;margin:0;letter-spacing:.01em}
 header h1 a{color:inherit;text-decoration:none}
 header h1 small{font-weight:400;color:var(--ink-2);margin-left:8px}
+header h1 .ver{font-weight:400;font-size:11px;color:var(--muted);margin-left:10px;padding:2px 6px;border:1px solid var(--hair);border-radius:4px;vertical-align:middle}
 .spacer{flex:1}
 .field{display:flex;align-items:center;gap:8px;color:var(--ink-2)}
 .field label{font-size:12px;text-transform:uppercase;letter-spacing:.06em}
@@ -106,7 +107,7 @@ main{display:grid;grid-template-columns:380px 1fr;min-height:0}
 <body>
 <div id="app">
   <header>
-    <h1><a href="https://github.com/op12no2/yaps" target="_blank" rel="noopener">YAPS <small>yet another population simulator</small></a></h1>
+    <h1><a href="https://github.com/op12no2/yaps" target="_blank" rel="noopener">YAPS <small>yet another population simulator</small></a><span class="ver mono" title="Version">v1.0</span></h1>
     <div class="spacer"></div>
     <div class="field"><label for="year0">Start year</label><input id="year0" type="range" min="1950" max="2150" step="1"><span id="year0Val" class="mono val"></span></div>
     <div class="field"><label for="horizon">Years ahead</label><input id="horizon" type="range" min="10" max="200" step="5" value="75"><span id="horizonVal" class="mono val"></span></div>
