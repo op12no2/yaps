@@ -13,7 +13,7 @@ It is a single `index.html` file. No install, no build step, no server. Open it 
 
 ## Getting started
 
-Open the page. It starts with a plain, flat set-up: 70 million people, a balanced age profile, retirement at 65, fertility held at 1.6, life expectancy held at 82 and no migration. Everything is yours to change.
+Open the page. It starts with a plain, flat set-up: 70 million people, a balanced age profile, working age from 17 to 65, fertility held at 1.6, life expectancy held at 82 and no migration. Everything is yours to change.
 
 The left-hand panel holds the inputs. The chart fills the rest of the screen.
 
@@ -27,7 +27,7 @@ The chips above the chart pick what it shows. One is active at a time, so the ve
 
 **Births & deaths** draws both lines on the same axis because they share a unit. The year the deaths line crosses above the births line is the year the population would start shrinking without migration.
 
-**Age mix** stacks the population into three bands, children (0 to 16), working age (17 up to the retirement age) and retired, so the height of the whole stack is the total population and the bands inside it show who makes it up. The retired band divided by the working-age band is the MVP ratio. Because the bands follow the retirement age graph, dragging retirement upwards visibly moves people from the top band into the middle one. Hovering gives the people and the percentage in each band.
+**Age mix** stacks the population into three bands, children, working age and retired, with the two boundaries set by the start-of-work and retirement graphs, so the height of the whole stack is the total population and the bands inside it show who makes it up. The retired band divided by the working-age band is the MVP ratio. Because the bands follow those graphs, dragging retirement upwards visibly moves people from the top band into the middle one, and dragging the start of work upwards moves people from the middle band into the bottom one. Hovering gives the people and the percentage in each band.
 
 Hover anywhere on the chart for the exact values in that year. The active chip is saved with everything else.
 
@@ -37,11 +37,11 @@ At the top of the panel is a one-line summary: population today, population at t
 
 - **Population today.** A slider from 100 thousand to 12 billion. It moves in proportional steps, so a small town and the whole planet are both within reach without the low end being cramped.
 - **Age profile.** A three-way choice: Young, Balanced or Older. This is a rough description of how many children versus pensioners there are today. A country like Nigeria is Young, most of Western Europe is Balanced, Japan is Older. It matters a lot: an Older population keeps shrinking for decades even if fertility recovers, because there are fewer people of parenting age.
-- **Four small graphs** for fertility, life expectancy, retirement age and net migration. See the next section.
+- **Five small graphs** for fertility, life expectancy, start of working age, retirement age and net migration. See the next section.
 
 ## The small graphs
 
-Each of the four time-varying inputs is drawn as a line running from today (left edge) to the last year of the projection (right edge). The line *is* the setting. Its height at any year is the value used for that year.
+Each of the five time-varying inputs is drawn as a line running from today (left edge) to the last year of the projection (right edge). The line *is* the setting. Its height at any year is the value used for that year.
 
 Every graph starts flat, with a point at each end.
 
@@ -61,6 +61,10 @@ Children per woman over her lifetime. The faint line labelled "replacement 2.1" 
 ### Life expectancy
 
 Expected years of life for a baby born that year. Rich countries sit in the low to mid 80s. The graph allows anything up to 150, for the optimists.
+
+### Start of working age
+
+The age at which people stop counting as children and start counting as working-age. It defaults to 17 and runs from 10 to 30. Push it up to model longer education, or down for a society where people work younger. Together with the retirement age it defines the working-age band that the MVP ratio and the age mix are built on.
 
 ### Retirement age
 
@@ -84,7 +88,7 @@ Migrants join the same age groups as everyone else, so from the year they arrive
 
 ## The MVP ratio
 
-Minimum viable population. In nature it is the size below which a population is effectively extinct even though individuals remain. For a country, the suggestion here is that the limit is not size but shape: the number of people past retirement age for every person of working age, taken as 17 up to the retirement age.
+Minimum viable population. In nature it is the size below which a population is effectively extinct even though individuals remain. For a country, the suggestion here is that the limit is not size but shape: the number of people past retirement age for every person of working age, where working age runs from the start-of-work graph up to the retirement graph.
 
 The **MVP ratio** chip above the chart shows it. A value of 0.30 means three retirees for every ten working-age adults. Higher is worse: the line climbs as a population ages, so a line rising towards the threshold is heading for trouble and a low, flat line is healthy. This is the reverse of the biological version, where a population falls down to its minimum viable size. The threshold is 1.00, one retiree per working-age adult, the proposed point beyond which the fabric of society is assumed to give way: the cost of supporting the old falls on too few, debt mounts, and the people who can leave do. Japan today is around 0.55 and no country has yet recorded 1.00, so the line marks territory the model can reach but the real world has not.
 

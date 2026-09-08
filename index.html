@@ -128,7 +128,6 @@ main{display:grid;grid-template-columns:380px 1fr;min-height:0}
 // ---------- constants ----------
 const YEAR0 = new Date().getFullYear();
 const AGES = 171;            // 0..170, last bin is 170+ (room for a life expectancy of 150)
-const WORK_START = 17;       // first working age
 const FEMALE_SHARE = 0.49;
 
 const PROFILES = {
@@ -142,6 +141,8 @@ const CURVES = {
   fert: { title: 'Fertility', unit: 'children per woman', min: 0, max: 6, ref: 2.1, refLabel: 'replacement 2.1',
           fmt: v => v.toFixed(1) },
   life: { title: 'Life expectancy', unit: 'years', min: 40, max: 150, ref: null,
+          fmt: v => v.toFixed(0) },
+  work: { title: 'Start of working age', unit: 'years old', min: 10, max: 30, ref: null,
           fmt: v => v.toFixed(0) },
   retire: { title: 'Retirement age', unit: 'years old', min: 40, max: 100, ref: null,
           fmt: v => v.toFixed(0) },
@@ -241,17 +242,19 @@ function startingPyramid(total, r, q, tfr) {
 
 function simulate(st) {
   const horizon = st.horizon;
-  const fert = interpolator(st.fert), life = interpolator(st.life), mig = interpolator(st.mig), retireAt = interpolator(st.retire);
+  const fert = interpolator(st.fert), life = interpolator(st.life), mig = interpolator(st.mig), retireAt = interpolator(st.retire), workAt = interpolator(st.work);
   const out = { pop: [], births: [], deaths: [], median: [], retired: [], mvp: [], kids: [], work: [], old: [] };
   let n = startingPyramid(st.pop, PROFILES[st.profile].r, mortality(life(0)), fert(0));
-  const record = (n, births, deaths, retire) => {
-    // retire is fractional: the cohort it falls inside is split proportionally, so a
-    // rising retirement age moves people across smoothly rather than a cohort at a time
-    const rf = Math.floor(retire), rfrac = retire - rf;
+  const record = (n, births, deaths, t) => {
+    // Both boundaries are fractional: the cohort each falls inside is split proportionally,
+    // so a moving boundary shifts people across smoothly rather than a cohort at a time.
+    const retire = clamp(retireAt(t), 11, AGES - 1), start = clamp(workAt(t), 0, retire - 1);
+    const rf = Math.floor(retire), rfrac = retire - rf, sf = Math.floor(start), sfrac = start - sf;
     let tot = 0, old = 0, work = 0, kids = 0;
     for (let a = 0; a < AGES; a++) {
       tot += n[a];
-      if (a < WORK_START) kids += n[a];
+      if (a < sf) kids += n[a];
+      else if (a === sf) { kids += n[a] * sfrac; if (a === rf) { work += n[a] * (rfrac - sfrac); old += n[a] * (1 - rfrac); } else work += n[a] * (1 - sfrac); }
       else if (a > rf) old += n[a];
       else if (a === rf) { work += n[a] * rfrac; old += n[a] * (1 - rfrac); }
       else work += n[a];
@@ -261,7 +264,7 @@ function simulate(st) {
     out.retired.push(tot > 0 ? old / tot : 0); out.mvp.push(work > 0 ? old / work : 0);
     out.kids.push(kids); out.work.push(work); out.old.push(old);
   };
-  record(n, NaN, NaN, clamp(retireAt(0), WORK_START, AGES - 1));
+  record(n, NaN, NaN, 0);
   for (let y = 1; y <= horizon; y++) {
     const t = y / horizon, tfr = fert(t), q = mortality(life(t)), m = mig(t);
     let births = 0, deaths = 0;
@@ -272,7 +275,7 @@ function simulate(st) {
     deaths += births * q[0] / 2;
     for (let a = 0; a < AGES; a++) nn[a] = Math.max(0, nn[a] + m * MIG_SHAPE[a]);
     n = nn;
-    record(n, births, deaths, clamp(retireAt(t), WORK_START, AGES - 1));
+    record(n, births, deaths, t);
   }
   return out;
 }
@@ -282,6 +285,7 @@ const defaults = () => ({
   horizon: 75, metric: 'pop', pop: 70e6, profile: 'balanced',
   fert: [{ t: 0, v: 1.6 }, { t: 1, v: 1.6 }],
   life: [{ t: 0, v: 82 }, { t: 1, v: 82 }],
+  work: [{ t: 0, v: 17 }, { t: 1, v: 17 }],
   retire: [{ t: 0, v: 65 }, { t: 1, v: 65 }],
   mig:  [{ t: 0, v: 0 }, { t: 1, v: 0 }],
 });
@@ -292,6 +296,7 @@ function valid(s) {
   if (!(s && typeof s === 'object' && Array.isArray(s.fert) && Array.isArray(s.life) && Array.isArray(s.mig) && isFinite(s.pop))) return false;
   if (typeof s.retire === 'number') s.retire = [{ t: 0, v: s.retire }, { t: 1, v: s.retire }];
   if (!(s.metric in METRIC)) s.metric = 'pop';
+  if (!Array.isArray(s.work)) s.work = defaults().work;
   return Array.isArray(s.retire);
 }
 function load() {
@@ -370,7 +375,7 @@ class CurveEditor {
     if (t - pts[i - 1].t < 0.02 || pts[i].t - t < 0.02) return;
     pts.splice(i, 0, { t, v: this.snap(v) }); this.draw(); this.onChange();
   }
-  snap(v) { if (this.key === 'fert') return Math.round(v * 20) / 20; if (this.key === 'life') return Math.round(v * 2) / 2; if (this.key === 'retire') return Math.round(v); const s = niceStep(this.bounds()[1], 40); return Math.round(v / s) * s; }
+  snap(v) { if (this.key === 'fert') return Math.round(v * 20) / 20; if (this.key === 'life') return Math.round(v * 2) / 2; if (this.key === 'retire' || this.key === 'work') return Math.round(v); const s = niceStep(this.bounds()[1], 40); return Math.round(v / s) * s; }
   draw() {
     const cv = this.cv, dpr = window.devicePixelRatio || 1, g = this.geom(); if (g.w === 0) return;
     if (cv.width !== Math.round(g.w * dpr) || cv.height !== Math.round(g.h * dpr)) { cv.width = Math.round(g.w * dpr); cv.height = Math.round(g.h * dpr); }
@@ -449,8 +454,8 @@ const METRIC = {
   natural: { name: 'Births & deaths', axis: 'People per year', fmt: fmtNum, series: [{ key: 'births', name: 'Births', color: '--s3' }, { key: 'deaths', name: 'Deaths', color: '--s2' }] },
   median:  { name: 'Median age', axis: 'Years', fmt: v => v.toFixed(1), series: [{ key: 'median', name: 'Median age', color: '--s4' }] },
   retired: { name: 'Share retired', axis: 'Share of people past retirement age', fmt: v => (v * 100).toFixed(0) + '%', series: [{ key: 'retired', name: 'Share retired', color: '--s5' }] },
-  mix:     { name: 'Age mix', axis: 'People, stacked', fmt: fmtNum, stacked: true, series: [{ key: 'kids', name: `Children (0 to ${WORK_START - 1})`, color: '--s3' }, { key: 'work', name: 'Working age', color: '--s1' }, { key: 'old', name: 'Retired', color: '--s8' }] },
-  mvp:     { name: 'MVP ratio', axis: `MVP ratio: people past retirement age for every person aged ${WORK_START} up to it`, fmt: v => v.toFixed(2), ref: 1, refLabel: '1.00 = MVP threshold, one retiree per working-age adult. Higher is worse.', series: [{ key: 'mvp', name: 'MVP ratio', color: '--s8' }] },
+  mix:     { name: 'Age mix', axis: 'People, stacked', fmt: fmtNum, stacked: true, series: [{ key: 'kids', name: 'Children', color: '--s3' }, { key: 'work', name: 'Working age', color: '--s1' }, { key: 'old', name: 'Retired', color: '--s8' }] },
+  mvp:     { name: 'MVP ratio', axis: 'MVP ratio: people past retirement age for every person of working age', fmt: v => v.toFixed(2), ref: 1, refLabel: '1.00 = MVP threshold, one retiree per working-age adult. Higher is worse.', series: [{ key: 'mvp', name: 'MVP ratio', color: '--s8' }] },
 };
 const legendEl = document.getElementById('legend');
 function renderLegend() {
