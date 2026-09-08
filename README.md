@@ -8,7 +8,7 @@ Link: https://op12no2.github.io/yaps/
 
 - Projects each population year by year for as far ahead as you choose (10 to 200 years).
 - Draws one line per population on a shared chart. Hover the chart to read off values for any year.
-- Switch what the chart shows: total population, births per year, deaths per year, median age, or the share of people aged 65 and over.
+- Switch what the chart shows: total population, births per year, deaths per year, median age, the share of people aged 65 and over, or the MVP ratio (see below).
 - Recomputes instantly on every change. There is no run button.
 - Remembers your set-up in the browser, and can pack the whole thing into a link you can send to someone else.
 
@@ -78,6 +78,17 @@ The simulator does not use a single growth rate. Each population is tracked as 1
 The starting age structure is derived from the Young / Balanced / Older choice using a stable-population approximation. That is the roughest part of the model and the first thing worth replacing with real age pyramids.
 
 The results are in the right ballpark. Japan, on its example settings, lands close to the UN projection for 2100. Nigeria comes out higher than the UN because the example keeps fertility high for longer.
+
+## The MVP ratio
+
+Minimum viable population. In nature it is the size below which a population is effectively extinct even though individuals remain. For a country, the suggestion here is that the limit is not size but shape: the number of people aged 65 and over for every person of working age, taken as 17 to 64.
+
+Choose **MVP ratio** in the Show menu to chart it. A value of 0.30 means three pensioners for every ten working-age adults. The chart draws a reference line at 1.00, one pensioner per working-age adult, as the proposed threshold beyond which the fabric of society is assumed to give way: the cost of supporting the old falls on too few, debt mounts, and the people who can leave do. Japan today is around 0.55 and no country has yet recorded 1.00, so the line marks territory the model can reach but the real world has not.
+
+Two things to bear in mind when reading it:
+
+- Not everyone of working age works. If you mean pensioners per actual worker, the equivalent threshold on this chart is nearer 0.7.
+- The model does not yet react to the ratio. Migration follows the graph you drew whether or not the threshold is crossed. A feedback where people leave as the ratio climbs is a natural next step.
 
 ## Sharing and saving
 

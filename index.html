@@ -126,6 +126,7 @@ main{display:grid;grid-template-columns:380px 1fr;min-height:0}
         <option value="deaths">Deaths per year</option>
         <option value="median">Median age</option>
         <option value="over65">Share aged 65+</option>
+        <option value="mvp">MVP ratio</option>
       </select>
     </div>
     <button class="btn" id="share">Copy share link</button>
@@ -260,12 +261,12 @@ function stablePyramid(total, r, q) {
 
 function simulate(p, horizon) {
   const fert = interpolator(p.fert), life = interpolator(p.life), mig = interpolator(p.mig);
-  const out = { pop: [], births: [], deaths: [], median: [], over65: [] };
+  const out = { pop: [], births: [], deaths: [], median: [], over65: [], mvp: [] };
   let n = stablePyramid(p.pop, PROFILES[p.profile].r, mortality(life(0)));
   const record = (n, births, deaths) => {
-    let tot = 0, old = 0; for (let a = 0; a < AGES; a++) { tot += n[a]; if (a >= 65) old += n[a]; }
+    let tot = 0, old = 0, work = 0; for (let a = 0; a < AGES; a++) { tot += n[a]; if (a >= 65) old += n[a]; else if (a >= 17) work += n[a]; }
     let acc = 0, med = 0; for (let a = 0; a < AGES; a++) { if (acc + n[a] >= tot / 2) { med = a + (tot / 2 - acc) / Math.max(n[a], 1e-9); break; } acc += n[a]; }
-    out.pop.push(tot); out.births.push(births); out.deaths.push(deaths); out.median.push(med); out.over65.push(tot > 0 ? old / tot : 0);
+    out.pop.push(tot); out.births.push(births); out.deaths.push(deaths); out.median.push(med); out.over65.push(tot > 0 ? old / tot : 0); out.mvp.push(work > 0 ? old / work : 0);
   };
   record(n, NaN, NaN);
   for (let y = 1; y <= horizon; y++) {
@@ -525,6 +526,7 @@ const METRIC = {
   deaths: { label: 'Deaths per year', fmt: fmtNum },
   median: { label: 'Median age', fmt: v => v.toFixed(1) },
   over65: { label: 'Share aged 65+', fmt: v => (v * 100).toFixed(0) + '%' },
+  mvp: { label: 'MVP ratio: people aged 65+ for every person aged 17 to 64', fmt: v => v.toFixed(2), ref: 1, refLabel: '1.00 = MVP threshold, one pensioner per working-age adult' },
 };
 let hoverX = null, chartGeom = null;
 function drawChart() {
@@ -535,12 +537,14 @@ function drawChart() {
   const vis = state.pops.filter(p => p.visible && results.has(p.id));
   let max = 0; for (const p of vis) for (const v of results.get(p.id)[m]) if (isFinite(v) && v > max) max = v;
   if (max <= 0) max = 1;
+  if (mt.ref) max = Math.max(max, mt.ref * 1.15);
   const step = niceStep(max, 5), ymax = Math.ceil(max / step) * step;
   const N = state.horizon, X = i => x0 + i / N * (x1 - x0), Y = v => y1 - v / ymax * (y1 - y0);
   chartGeom = { x0, x1, y0, y1, X, Y };
   c.font = '11px "IBM Plex Mono", ui-monospace, monospace'; c.textBaseline = 'middle'; c.fillStyle = css('--muted'); c.strokeStyle = css('--grid'); c.lineWidth = 1;
   for (let v = 0; v <= ymax + 1e-9; v += step) { const y = Math.round(Y(v)) + 0.5; c.beginPath(); c.moveTo(x0, y); c.lineTo(x1, y); c.stroke(); c.textAlign = 'right'; c.fillText(mt.fmt(v), x0 - 8, y); }
   c.strokeStyle = css('--axis'); c.beginPath(); c.moveTo(x0, Math.round(y1) + 0.5); c.lineTo(x1, Math.round(y1) + 0.5); c.stroke();
+  if (mt.ref) { const y = Math.round(Y(mt.ref)) + 0.5; c.strokeStyle = css('--ink-2'); c.beginPath(); c.moveTo(x0, y); c.lineTo(x1, y); c.stroke(); c.textAlign = 'right'; c.font = '500 11px "IBM Plex Sans", system-ui, sans-serif'; c.fillStyle = css('--ink-2'); c.fillText(mt.refLabel, x1, y - 9); c.font = '11px "IBM Plex Mono", ui-monospace, monospace'; c.fillStyle = css('--muted'); }
   const xs = niceStep(N, 8); c.textAlign = 'center'; c.textBaseline = 'top';
   for (let i = 0; i <= N; i += xs) if (i === N || N - i >= xs / 2) c.fillText(String(YEAR0 + i), X(i), y1 + 8);
   if (N % xs) c.fillText(String(YEAR0 + N), X(N), y1 + 8);
