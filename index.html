@@ -12,6 +12,7 @@
   --ink:#f1f3f5; --ink-2:#aab3bd; --muted:#7f8994;
   --grid:#252b32; --axis:#3a424b; --hair:rgba(255,255,255,.12);
   --accent:#3987e5; --accent-ink:#ffffff; --danger:#e66767;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s8:#e66767;
   --shadow:0 1px 2px rgba(0,0,0,.4), 0 4px 16px rgba(0,0,0,.3);
 }
 *{box-sizing:border-box}
@@ -37,11 +38,21 @@ main{display:grid;grid-template-columns:380px 1fr;min-height:0}
 #sidebar{border-right:1px solid var(--hair);overflow-y:auto;padding:14px 16px 20px;display:flex;flex-direction:column;gap:16px;background:var(--surface)}
 #summary{color:var(--ink-2);font-size:13px;line-height:1.5}
 #summary b{color:var(--ink);font-weight:500}
-#chartArea{display:grid;grid-template-rows:1fr;min-height:0;padding:16px}
+#chartArea{display:grid;grid-template-rows:auto 1fr;min-height:0;padding:12px 16px 16px;gap:10px}
+#legend{display:flex;flex-wrap:wrap;gap:6px 8px}
+.key{display:flex;align-items:center;gap:7px;padding:5px 10px;border-radius:999px;background:var(--surface-2);border:1px solid transparent;cursor:pointer;user-select:none;font-size:13px;color:var(--ink)}
+.key:hover{background:var(--surface-3)}
+.key .sw{width:12px;height:12px;border-radius:50%;background:var(--c);flex:none}
+.key.off{color:var(--muted)}
+.key.off .sw{background:transparent;box-shadow:inset 0 0 0 2px var(--c)}
+.key:focus-visible{border-color:var(--accent)}
 #chartWrap{position:relative;background:var(--surface);border-radius:10px;box-shadow:var(--shadow);min-height:0}
 #chart{position:absolute;inset:0;width:100%;height:100%;display:block;border-radius:10px}
-#tip{position:absolute;pointer-events:none;background:var(--surface-2);border:1px solid var(--hair);box-shadow:var(--shadow);border-radius:8px;padding:6px 10px;font-size:12px;display:none;white-space:nowrap}
-#tip .yr{color:var(--ink-2);margin-right:8px}
+#tip{position:absolute;pointer-events:none;background:var(--surface-2);border:1px solid var(--hair);box-shadow:var(--shadow);border-radius:8px;padding:7px 10px;font-size:12px;display:none;white-space:nowrap;min-width:170px}
+#tip .yr{font-weight:600;margin-bottom:4px}
+#tip .row{display:flex;align-items:center;justify-content:space-between;gap:12px;line-height:1.6}
+#tip .row .l{display:flex;align-items:center;gap:6px;color:var(--ink-2)}
+#tip .dot{width:8px;height:8px;border-radius:50%;background:var(--c)}
 
 .prop{display:flex;flex-direction:column;gap:6px}
 .prop .lab{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
@@ -74,16 +85,6 @@ main{display:grid;grid-template-columns:380px 1fr;min-height:0}
     <h1>YAPS <small>yet another population simulator</small></h1>
     <div class="spacer"></div>
     <div class="field"><label for="horizon">Years ahead</label><input id="horizon" class="mono" type="number" min="10" max="200" step="5" value="75"></div>
-    <div class="field"><label for="metric">Show</label>
-      <select id="metric">
-        <option value="pop">Total population</option>
-        <option value="births">Births per year</option>
-        <option value="deaths">Deaths per year</option>
-        <option value="median">Median age</option>
-        <option value="retired">Share past retirement age</option>
-        <option value="mvp">MVP ratio</option>
-      </select>
-    </div>
     <button class="btn" id="share">Copy share link</button>
     <button class="btn" id="reset">Reset</button>
   </header>
@@ -102,6 +103,7 @@ main{display:grid;grid-template-columns:380px 1fr;min-height:0}
       <p class="hint">Every change updates the chart straight away. Drag the points on the small graphs to shape how each value changes over time. Double-click a line to add a point, and drag a point off its graph to remove it.</p>
     </aside>
     <section id="chartArea">
+      <div id="legend"></div>
       <div id="chartWrap"><canvas id="chart"></canvas><div id="tip"></div></div>
     </section>
   </main>
@@ -247,7 +249,7 @@ function simulate(st) {
 
 // ---------- state ----------
 const defaults = () => ({
-  horizon: 75, metric: 'pop', pop: 70e6, profile: 'balanced',
+  horizon: 75, show: { pop: true, births: false, deaths: false, median: false, retired: false, mvp: true }, pop: 70e6, profile: 'balanced',
   fert: [{ t: 0, v: 1.6 }, { t: 1, v: 1.6 }],
   life: [{ t: 0, v: 82 }, { t: 1, v: 82 }],
   retire: [{ t: 0, v: 65 }, { t: 1, v: 65 }],
@@ -259,6 +261,7 @@ const editors = {};
 function valid(s) {
   if (!(s && typeof s === 'object' && Array.isArray(s.fert) && Array.isArray(s.life) && Array.isArray(s.mig) && isFinite(s.pop))) return false;
   if (typeof s.retire === 'number') s.retire = [{ t: 0, v: s.retire }, { t: 1, v: s.retire }];
+  if (!s.show || typeof s.show !== 'object') s.show = { ...defaults().show, ...(s.metric ? { [s.metric]: true } : {}) };
   return Array.isArray(s.retire);
 }
 function load() {
@@ -409,47 +412,70 @@ profileSeg.onclick = e => { const b = e.target.closest('button'); if (!b) return
 // ---------- main chart ----------
 const chart = document.getElementById('chart'), cctx = chart.getContext('2d'), tip = document.getElementById('tip'), wrap = document.getElementById('chartWrap');
 const METRIC = {
-  pop: { label: () => 'People', fmt: fmtNum },
-  births: { label: () => 'Births per year', fmt: fmtNum },
-  deaths: { label: () => 'Deaths per year', fmt: fmtNum },
-  median: { label: () => 'Median age', fmt: v => v.toFixed(1) },
-  retired: { label: () => 'Share of people past retirement age', fmt: v => (v * 100).toFixed(0) + '%' },
-  mvp: { label: () => `MVP ratio: people past retirement age for every person aged ${WORK_START} up to it`, fmt: v => v.toFixed(2), ref: 1, refLabel: '1.00 = MVP threshold, one retiree per working-age adult. Higher is worse.' },
+  pop:     { name: 'Population',        color: '--s1', fmt: fmtNum },
+  births:  { name: 'Births per year',   color: '--s3', fmt: fmtNum },
+  deaths:  { name: 'Deaths per year',   color: '--s2', fmt: fmtNum },
+  median:  { name: 'Median age',        color: '--s4', fmt: v => v.toFixed(1) },
+  retired: { name: 'Share retired',     color: '--s5', fmt: v => (v * 100).toFixed(0) + '%' },
+  mvp:     { name: 'MVP ratio',         color: '--s8', fmt: v => v.toFixed(2), ref: 1, refLabel: 'MVP threshold (ratio 1.00). Higher is worse.' },
 };
+const legendEl = document.getElementById('legend');
+function renderLegend() {
+  legendEl.innerHTML = '';
+  for (const [k, m] of Object.entries(METRIC)) {
+    const b = document.createElement('button'); b.className = 'key' + (state.show[k] ? '' : ' off'); b.style.setProperty('--c', css(m.color));
+    b.innerHTML = `<span class="sw"></span>${m.name}`; b.title = (state.show[k] ? 'Hide ' : 'Show ') + m.name.toLowerCase();
+    b.onclick = () => { state.show[k] = !state.show[k]; renderLegend(); drawChart(); saveLocal(); };
+    legendEl.appendChild(b);
+  }
+}
+// Every series is drawn indexed to its value today (= 100) so that measures on
+// very different scales can share one axis honestly. Real values live in the tooltip.
+function baseOf(d) { for (const v of d) if (isFinite(v) && v > 0) return v; return 1; }
 let hoverX = null, chartGeom = null;
 function drawChart() {
   const dpr = window.devicePixelRatio || 1, r = wrap.getBoundingClientRect(), W = r.width, H = r.height; if (!W || !H || !result) return;
   if (chart.width !== Math.round(W * dpr) || chart.height !== Math.round(H * dpr)) { chart.width = Math.round(W * dpr); chart.height = Math.round(H * dpr); }
   const c = cctx; c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, W, H);
-  const m = state.metric, mt = METRIC[m], d = result[m], pad = { l: 64, r: 24, t: 28, b: 34 }, x0 = pad.l, x1 = W - pad.r, y0 = pad.t, y1 = H - pad.b;
-  let max = 0; for (const v of d) if (isFinite(v) && v > max) max = v;
-  if (max <= 0) max = 1;
-  if (mt.ref) max = Math.max(max, mt.ref * 1.15);
+  const pad = { l: 56, r: 24, t: 28, b: 34 }, x0 = pad.l, x1 = W - pad.r, y0 = pad.t, y1 = H - pad.b, N = state.horizon;
+  const series = Object.keys(METRIC).filter(k => state.show[k]).map(k => { const d = result[k], base = baseOf(d); return { k, m: METRIC[k], d, base, idx: d.map(v => isFinite(v) ? v / base * 100 : NaN), col: css(METRIC[k].color) }; });
+  let max = 100; for (const sr of series) for (const v of sr.idx) if (isFinite(v) && v > max) max = v;
+  const mvp = series.find(sr => sr.k === 'mvp'); let refIdx = null;
+  if (mvp) { refIdx = mvp.m.ref / mvp.base * 100; if (refIdx <= max * 1.6) max = Math.max(max, refIdx * 1.08); else refIdx = null; }
+  max *= 1.04;
   const step = niceStep(max, 5), ymax = Math.ceil(max / step) * step;
-  const N = state.horizon, X = i => x0 + i / N * (x1 - x0), Y = v => y1 - v / ymax * (y1 - y0);
+  const X = i => x0 + i / N * (x1 - x0), Y = v => y1 - v / ymax * (y1 - y0);
   chartGeom = { x0, x1 };
   c.font = '11px "IBM Plex Mono", ui-monospace, monospace'; c.textBaseline = 'middle'; c.fillStyle = css('--muted'); c.strokeStyle = css('--grid'); c.lineWidth = 1;
-  for (let v = 0; v <= ymax + 1e-9; v += step) { const y = Math.round(Y(v)) + 0.5; c.beginPath(); c.moveTo(x0, y); c.lineTo(x1, y); c.stroke(); c.textAlign = 'right'; c.fillText(mt.fmt(v), x0 - 8, y); }
-  c.strokeStyle = css('--axis'); c.beginPath(); c.moveTo(x0, Math.round(y1) + 0.5); c.lineTo(x1, Math.round(y1) + 0.5); c.stroke();
-  if (mt.ref) { const y = Math.round(Y(mt.ref)) + 0.5; c.strokeStyle = css('--ink-2'); c.beginPath(); c.moveTo(x0, y); c.lineTo(x1, y); c.stroke(); c.textAlign = 'right'; c.font = '500 11px "IBM Plex Sans", system-ui, sans-serif'; c.fillStyle = css('--ink-2'); c.fillText(mt.refLabel, x1, y - 9); c.font = '11px "IBM Plex Mono", ui-monospace, monospace'; c.fillStyle = css('--muted'); }
+  for (let v = 0; v <= ymax + 1e-9; v += step) { const y = Math.round(Y(v)) + 0.5; c.beginPath(); c.moveTo(x0, y); c.lineTo(x1, y); c.stroke(); c.textAlign = 'right'; c.fillText(String(Math.round(v)), x0 - 8, y); }
+  const y100 = Math.round(Y(100)) + 0.5; c.strokeStyle = css('--axis'); c.beginPath(); c.moveTo(x0, y100); c.lineTo(x1, y100); c.stroke();
+  c.beginPath(); c.moveTo(x0, Math.round(y1) + 0.5); c.lineTo(x1, Math.round(y1) + 0.5); c.stroke();
   const xs = niceStep(N, 8); c.textAlign = 'center'; c.textBaseline = 'top';
   for (let i = 0; i <= N; i += xs) if (i === N || N - i >= xs / 2) c.fillText(String(YEAR0 + i), X(i), y1 + 8);
   if (N % xs) c.fillText(String(YEAR0 + N), X(N), y1 + 8);
-  c.textAlign = 'left'; c.textBaseline = 'middle'; c.font = '500 12px "IBM Plex Sans", system-ui, sans-serif'; c.fillStyle = css('--ink-2'); c.fillText(mt.label(), x0, y0 - 14);
-  const col = css('--accent');
-  c.strokeStyle = col; c.lineWidth = 2; c.lineJoin = 'round'; c.lineCap = 'round'; c.beginPath(); let started = false;
-  for (let i = 0; i <= N; i++) { if (!isFinite(d[i])) continue; const x = X(i), y = Y(d[i]); started ? c.lineTo(x, y) : c.moveTo(x, y); started = true; }
-  c.stroke();
-  const last = d[N]; if (isFinite(last)) { c.beginPath(); c.arc(X(N), Y(last), 6, 0, Math.PI * 2); c.fillStyle = css('--surface'); c.fill(); c.beginPath(); c.arc(X(N), Y(last), 4, 0, Math.PI * 2); c.fillStyle = col; c.fill(); }
-  if (hoverX !== null) {
-    const i = clamp(Math.round((hoverX - x0) / (x1 - x0) * N), 0, N), x = Math.round(X(i)) + 0.5, v = d[i];
+  c.textAlign = 'left'; c.textBaseline = 'middle'; c.font = '500 12px "IBM Plex Sans", system-ui, sans-serif'; c.fillStyle = css('--ink-2');
+  c.fillText(series.length ? 'Indexed: today = 100. Hover for real values.' : 'Nothing selected. Click a measure above to show it.', x0, y0 - 14);
+  if (refIdx !== null) {
+    const y = Math.round(Y(refIdx)) + 0.5; c.strokeStyle = mvp.col; c.globalAlpha = 0.6; c.beginPath(); c.moveTo(x0, y); c.lineTo(x1, y); c.stroke(); c.globalAlpha = 1;
+    c.textAlign = 'right'; c.font = '500 11px "IBM Plex Sans", system-ui, sans-serif'; c.fillStyle = css('--ink-2'); c.fillText(mvp.m.refLabel, x1, y - 9);
+  } else if (mvp) {
+    c.textAlign = 'right'; c.font = '500 11px "IBM Plex Sans", system-ui, sans-serif'; c.fillStyle = css('--ink-2'); c.fillText('MVP threshold is far above this chart', x1, y0 - 14);
+  }
+  c.lineWidth = 2; c.lineJoin = 'round'; c.lineCap = 'round';
+  for (const sr of series) {
+    c.strokeStyle = sr.col; c.beginPath(); let started = false;
+    for (let i = 0; i <= N; i++) { if (!isFinite(sr.idx[i])) continue; const x = X(i), y = Y(sr.idx[i]); started ? c.lineTo(x, y) : c.moveTo(x, y); started = true; }
+    c.stroke();
+    const last = sr.idx[N]; if (isFinite(last)) { c.beginPath(); c.arc(X(N), Y(last), 6, 0, Math.PI * 2); c.fillStyle = css('--surface'); c.fill(); c.beginPath(); c.arc(X(N), Y(last), 4, 0, Math.PI * 2); c.fillStyle = sr.col; c.fill(); }
+  }
+  if (hoverX !== null && series.length) {
+    const i = clamp(Math.round((hoverX - x0) / (x1 - x0) * N), 0, N), x = Math.round(X(i)) + 0.5;
     c.strokeStyle = css('--axis'); c.beginPath(); c.moveTo(x, y0); c.lineTo(x, y1); c.stroke();
-    if (isFinite(v)) {
-      c.beginPath(); c.arc(X(i), Y(v), 5.5, 0, Math.PI * 2); c.fillStyle = css('--surface'); c.fill(); c.beginPath(); c.arc(X(i), Y(v), 3.5, 0, Math.PI * 2); c.fillStyle = col; c.fill();
-      tip.innerHTML = `<span class="yr">${YEAR0 + i}</span><span class="mono">${mt.fmt(v)}</span>`;
-      tip.style.display = 'block';
-      const tw = tip.offsetWidth; tip.style.left = (X(i) + 14 + tw > W ? X(i) - 14 - tw : X(i) + 14) + 'px'; tip.style.top = clamp(Y(v) - 14, 8, H - tip.offsetHeight - 8) + 'px';
-    } else tip.style.display = 'none';
+    const rows = series.filter(sr => isFinite(sr.d[i]));
+    for (const sr of rows) { c.beginPath(); c.arc(X(i), Y(sr.idx[i]), 5.5, 0, Math.PI * 2); c.fillStyle = css('--surface'); c.fill(); c.beginPath(); c.arc(X(i), Y(sr.idx[i]), 3.5, 0, Math.PI * 2); c.fillStyle = sr.col; c.fill(); }
+    tip.innerHTML = `<div class="yr">${YEAR0 + i}</div>` + rows.map(sr => `<div class="row"><span class="l"><span class="dot" style="--c:${sr.col}"></span>${sr.m.name}</span><span class="mono">${sr.m.fmt(sr.d[i])}</span></div>`).join('');
+    tip.style.display = 'block';
+    const tw = tip.offsetWidth; tip.style.left = (X(i) + 14 + tw > W ? X(i) - 14 - tw : X(i) + 14) + 'px'; tip.style.top = clamp(y0 + 8, 8, H - tip.offsetHeight - 8) + 'px';
   } else tip.style.display = 'none';
 }
 wrap.addEventListener('pointermove', e => { const r = wrap.getBoundingClientRect(); const x = e.clientX - r.left; hoverX = chartGeom && x >= chartGeom.x0 - 6 && x <= chartGeom.x1 + 6 ? x : null; drawChart(); });
@@ -457,9 +483,8 @@ wrap.addEventListener('pointerleave', () => { hoverX = null; drawChart(); });
 new ResizeObserver(() => drawChart()).observe(wrap);
 
 // ---------- header controls ----------
-const horizonEl = document.getElementById('horizon'), metricEl = document.getElementById('metric');
+const horizonEl = document.getElementById('horizon');
 horizonEl.addEventListener('change', () => { const v = clamp(Math.round(+horizonEl.value || 75), 10, 200); horizonEl.value = v; state.horizon = v; recompute(); redrawEditors(); });
-metricEl.addEventListener('change', () => { state.metric = metricEl.value; drawChart(); saveLocal(); });
 document.getElementById('share').onclick = async () => {
   const url = shareUrl();
   try { await navigator.clipboard.writeText(url); toast('Link copied. Anyone opening it sees exactly this set-up.'); }
@@ -470,8 +495,8 @@ let toastTimer = null;
 function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2400); }
 
 function init() {
-  horizonEl.value = state.horizon; metricEl.value = state.metric;
-  buildSidebar(); recompute();
+  horizonEl.value = state.horizon;
+  buildSidebar(); renderLegend(); recompute();
 }
 load();
 document.fonts && document.fonts.ready.then(() => { drawChart(); redrawEditors(); });

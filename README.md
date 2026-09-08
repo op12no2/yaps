@@ -7,8 +7,7 @@ It is a single `index.html` file. No install, no build step, no server. Open it 
 ## What it does
 
 - Projects the population year by year for as far ahead as you choose (10 to 200 years).
-- Draws the result on a chart. Hover the chart to read off the value for any year.
-- Switch what the chart shows: total population, births per year, deaths per year, median age, the share of people past retirement age, or the MVP ratio (see below).
+- Draws the results on one chart: total population, births per year, deaths per year, median age, the share of people past retirement age, and the MVP ratio (see below). Click the coloured chips above the chart to show or hide each one. Hover the chart to read off real values for any year.
 - Recomputes instantly on every change. There is no run button.
 - Remembers your set-up in the browser, and can pack the whole thing into a link you can send to someone else.
 
@@ -19,9 +18,16 @@ Open the page. It starts with a plain, flat set-up: 70 million people, a balance
 The left-hand panel holds the inputs. The chart fills the rest of the screen.
 
 - **Years ahead** (top bar) sets how far into the future to project.
-- **Show** (top bar) picks which measure the chart draws.
 - **Copy share link** puts your entire set-up into the page address and copies it. Anyone who opens that link sees exactly what you see.
 - **Reset** throws away your changes and goes back to the factory defaults.
+
+## Reading the chart
+
+All six measures share one chart even though they live on very different scales: population is in the tens of millions, births in the hundreds of thousands, median age around 40 and the MVP ratio below 1. To make them comparable each line is drawn **indexed to its value today**, which counts as 100. A line at 120 means that measure is 20 percent above where it started, whatever its units. The horizontal rule at 100 is "no change".
+
+Hover anywhere on the chart for the real values in that year. The chips above the chart switch lines on and off, and the choice is saved with everything else. Population and MVP ratio are on by default.
+
+When the MVP ratio is shown, its threshold of 1.00 is drawn as a faint line in the same colour at the indexed position. If the threshold is a long way above everything on the chart, a note at the top right says so rather than squashing the other lines to fit it in.
 
 ## The inputs
 
@@ -78,7 +84,7 @@ Migrants join the same age groups as everyone else, so from the year they arrive
 
 Minimum viable population. In nature it is the size below which a population is effectively extinct even though individuals remain. For a country, the suggestion here is that the limit is not size but shape: the number of people past retirement age for every person of working age, taken as 17 up to the retirement age.
 
-Choose **MVP ratio** in the Show menu to chart it. A value of 0.30 means three retirees for every ten working-age adults. Higher is worse: the line climbs as a population ages, so a line rising towards the threshold is heading for trouble and a low, flat line is healthy. This is the reverse of the biological version, where a population falls down to its minimum viable size. The chart draws a reference line at 1.00, one retiree per working-age adult, as the proposed threshold beyond which the fabric of society is assumed to give way: the cost of supporting the old falls on too few, debt mounts, and the people who can leave do. Japan today is around 0.55 and no country has yet recorded 1.00, so the line marks territory the model can reach but the real world has not.
+The **MVP ratio** chip above the chart shows it. A value of 0.30 means three retirees for every ten working-age adults. Higher is worse: the line climbs as a population ages, so a line rising towards the threshold is heading for trouble and a low, flat line is healthy. This is the reverse of the biological version, where a population falls down to its minimum viable size. The threshold is 1.00, one retiree per working-age adult, the proposed point beyond which the fabric of society is assumed to give way: the cost of supporting the old falls on too few, debt mounts, and the people who can leave do. Japan today is around 0.55 and no country has yet recorded 1.00, so the line marks territory the model can reach but the real world has not.
 
 Things to bear in mind when reading it:
 
