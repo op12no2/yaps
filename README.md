@@ -95,7 +95,26 @@ The simulator does not use a single growth rate. The population is tracked as 17
 
 The starting age structure comes straight from the age profile graph, scaled to the population slider, with a short tail beyond age 150.
 
-Migrants join the same age groups as everyone else, so from the year they arrive they have the same fertility and mortality as the existing population.
+### How migrants are spread across ages
+
+Net migration is one number per year, and the model spreads it across ages using a single fixed profile: a bell curve centred on age 27 with a spread of about ten years, plus a smaller bump around age 8 for children travelling with their parents, cut off at age 80. Roughly:
+
+| Age band | Share of net migrants |
+|---|---|
+| 0 to 14 | about 12% |
+| 15 to 24 | about 27% |
+| 25 to 34 | about 40% |
+| 35 to 44 | about 17% |
+| 45 and over | about 4% |
+
+That is a fair match for typical international migration, which is dominated by people in their twenties and early thirties. The assumptions that follow from it:
+
+- **One shape for both directions.** Positive migration adds people with this profile, negative removes them with the same profile. In reality emigration often skews older than immigration, for example retirees leaving, and the model cannot show that.
+- **Migrants become locals on arrival.** They join the same age groups as everyone else, so from that year on they have the same fertility and mortality as the existing population. There is no separate fertility rate for arrivals and no tracking of descendants.
+- **No sex split.** The model does not track sex, so migrants are taken to be half women like everyone else.
+- **The shape never changes.** It is the same in year 1 and year 200, and it does not react to anything else in the model.
+- **Nobody over 80 moves.** Migration cannot add or remove people above that age.
+- **Age groups cannot go below zero.** If heavy emigration would empty an age group, it stops at zero, so a very large outflow removes fewer people than the graph says.
 
 ## The MVP ratio
 
