@@ -7,7 +7,7 @@ It is a single `index.html` file. No install, no build step, no server. Open it 
 ## What it does
 
 - Projects the population year by year for as far ahead as you choose (10 to 200 years).
-- Charts one measure at a time: total population, births and deaths per year, median age, the share of people past retirement age, or the MVP ratio (see below). Click the coloured chips above the chart to switch. Hover the chart to read off the value for any year.
+- Charts one measure at a time: total population, births and deaths per year, median age, the share of people past retirement age, the age mix, or the MVP ratio (see below). Click the coloured chips above the chart to switch. Hover the chart to read off the value for any year.
 - Recomputes instantly on every change. There is no run button.
 - Remembers your set-up in the browser, and can pack the whole thing into a link you can send to someone else.
 
@@ -26,6 +26,8 @@ The left-hand panel holds the inputs. The chart fills the rest of the screen.
 The chips above the chart pick what it shows. One is active at a time, so the vertical axis is always in real units for that measure: people, people per year, years, a percentage, or the ratio.
 
 **Births & deaths** draws both lines on the same axis because they share a unit. The year the deaths line crosses above the births line is the year the population would start shrinking without migration.
+
+**Age mix** stacks the population into three bands, children (0 to 16), working age (17 up to the retirement age) and retired, so the height of the whole stack is the total population and the bands inside it show who makes it up. The retired band divided by the working-age band is the MVP ratio. Because the bands follow the retirement age graph, dragging retirement upwards visibly moves people from the top band into the middle one. Hovering gives the people and the percentage in each band.
 
 Hover anywhere on the chart for the exact values in that year. The active chip is saved with everything else.
 
@@ -107,7 +109,6 @@ Put `index.html` in a GitHub repository, turn on GitHub Pages for that repositor
 - A real starting age pyramid instead of the three presets.
 - Migration that responds to the MVP ratio: fewer arrivals and more departures as the threshold approaches.
 - More time-varying inputs using the same drag-point graphs: GDP per head, health spending, and so on.
-- An age-pyramid view for any year.
 - Comparing two scenarios side by side.
 
 ## Licence

@@ -62,6 +62,8 @@ main{display:grid;grid-template-columns:380px 1fr;min-height:0}
 #tip .row{display:flex;align-items:center;justify-content:space-between;gap:12px;line-height:1.6}
 #tip .row .l{display:flex;align-items:center;gap:6px;color:var(--ink-2)}
 #tip .dot{width:8px;height:8px;border-radius:50%;background:var(--c)}
+#tip .pct{color:var(--muted);margin-left:2px}
+#tip .tot{border-top:1px solid var(--hair);margin-top:3px;padding-top:3px}
 
 .prop{display:flex;flex-direction:column;gap:6px}
 .prop .lab{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
@@ -240,16 +242,26 @@ function startingPyramid(total, r, q, tfr) {
 function simulate(st) {
   const horizon = st.horizon;
   const fert = interpolator(st.fert), life = interpolator(st.life), mig = interpolator(st.mig), retireAt = interpolator(st.retire);
-  const out = { pop: [], births: [], deaths: [], median: [], retired: [], mvp: [] };
+  const out = { pop: [], births: [], deaths: [], median: [], retired: [], mvp: [], kids: [], work: [], old: [] };
   let n = startingPyramid(st.pop, PROFILES[st.profile].r, mortality(life(0)), fert(0));
   const record = (n, births, deaths, retire) => {
-    let tot = 0, old = 0, work = 0;
-    for (let a = 0; a < AGES; a++) { tot += n[a]; if (a >= retire) old += n[a]; else if (a >= WORK_START) work += n[a]; }
+    // retire is fractional: the cohort it falls inside is split proportionally, so a
+    // rising retirement age moves people across smoothly rather than a cohort at a time
+    const rf = Math.floor(retire), rfrac = retire - rf;
+    let tot = 0, old = 0, work = 0, kids = 0;
+    for (let a = 0; a < AGES; a++) {
+      tot += n[a];
+      if (a < WORK_START) kids += n[a];
+      else if (a > rf) old += n[a];
+      else if (a === rf) { work += n[a] * rfrac; old += n[a] * (1 - rfrac); }
+      else work += n[a];
+    }
     let acc = 0, med = 0; for (let a = 0; a < AGES; a++) { if (acc + n[a] >= tot / 2) { med = a + (tot / 2 - acc) / Math.max(n[a], 1e-9); break; } acc += n[a]; }
     out.pop.push(tot); out.births.push(births); out.deaths.push(deaths); out.median.push(med);
     out.retired.push(tot > 0 ? old / tot : 0); out.mvp.push(work > 0 ? old / work : 0);
+    out.kids.push(kids); out.work.push(work); out.old.push(old);
   };
-  record(n, NaN, NaN, Math.round(retireAt(0)));
+  record(n, NaN, NaN, clamp(retireAt(0), WORK_START, AGES - 1));
   for (let y = 1; y <= horizon; y++) {
     const t = y / horizon, tfr = fert(t), q = mortality(life(t)), m = mig(t);
     let births = 0, deaths = 0;
@@ -260,7 +272,7 @@ function simulate(st) {
     deaths += births * q[0] / 2;
     for (let a = 0; a < AGES; a++) nn[a] = Math.max(0, nn[a] + m * MIG_SHAPE[a]);
     n = nn;
-    record(n, births, deaths, Math.round(retireAt(t)));
+    record(n, births, deaths, clamp(retireAt(t), WORK_START, AGES - 1));
   }
   return out;
 }
@@ -437,6 +449,7 @@ const METRIC = {
   natural: { name: 'Births & deaths', axis: 'People per year', fmt: fmtNum, series: [{ key: 'births', name: 'Births', color: '--s3' }, { key: 'deaths', name: 'Deaths', color: '--s2' }] },
   median:  { name: 'Median age', axis: 'Years', fmt: v => v.toFixed(1), series: [{ key: 'median', name: 'Median age', color: '--s4' }] },
   retired: { name: 'Share retired', axis: 'Share of people past retirement age', fmt: v => (v * 100).toFixed(0) + '%', series: [{ key: 'retired', name: 'Share retired', color: '--s5' }] },
+  mix:     { name: 'Age mix', axis: 'People, stacked', fmt: fmtNum, stacked: true, series: [{ key: 'kids', name: `Children (0 to ${WORK_START - 1})`, color: '--s3' }, { key: 'work', name: 'Working age', color: '--s1' }, { key: 'old', name: 'Retired', color: '--s8' }] },
   mvp:     { name: 'MVP ratio', axis: `MVP ratio: people past retirement age for every person aged ${WORK_START} up to it`, fmt: v => v.toFixed(2), ref: 1, refLabel: '1.00 = MVP threshold, one retiree per working-age adult. Higher is worse.', series: [{ key: 'mvp', name: 'MVP ratio', color: '--s8' }] },
 };
 const legendEl = document.getElementById('legend');
@@ -458,7 +471,8 @@ function drawChart() {
   const c = cctx; c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, W, H);
   const mt = METRIC[state.metric], pad = { l: 64, r: 24, t: 28, b: 34 }, x0 = pad.l, x1 = W - pad.r, y0 = pad.t, y1 = H - pad.b, N = state.horizon;
   const series = mt.series.map(sr => ({ ...sr, d: result[sr.key], col: css(sr.color) }));
-  let max = 0; for (const sr of series) for (const v of sr.d) if (isFinite(v) && v > max) max = v;
+  if (mt.stacked) { let run = null; for (const sr of series) { sr.top = sr.d.map((v, i) => (run ? run[i] : 0) + v); sr.bottom = run || sr.d.map(() => 0); run = sr.top; } }
+  let max = 0; for (const sr of series) for (const v of (sr.top || sr.d)) if (isFinite(v) && v > max) max = v;
   if (max <= 0) max = 1;
   if (mt.ref) max = Math.max(max, mt.ref * 1.15);
   const step = niceStep(max, 5), ymax = Math.ceil(max / step) * step;
@@ -473,10 +487,19 @@ function drawChart() {
   // axis title, plus an inline key when more than one line is drawn
   c.textAlign = 'left'; c.textBaseline = 'middle'; c.font = '500 12px "IBM Plex Sans", system-ui, sans-serif'; c.fillStyle = css('--ink-2');
   let tx = x0; c.fillText(mt.axis, tx, y0 - 14); tx += c.measureText(mt.axis).width + 18;
-  if (series.length > 1) for (const sr of series) { c.beginPath(); c.arc(tx + 5, y0 - 14, 4, 0, Math.PI * 2); c.fillStyle = sr.col; c.fill(); c.fillStyle = css('--ink-2'); c.fillText(sr.name, tx + 14, y0 - 14); tx += 14 + c.measureText(sr.name).width + 14; }
+  if (series.length > 1) for (const sr of (mt.stacked ? [...series].reverse() : series)) { c.beginPath(); c.arc(tx + 5, y0 - 14, 4, 0, Math.PI * 2); c.fillStyle = sr.col; c.fill(); c.fillStyle = css('--ink-2'); c.fillText(sr.name, tx + 14, y0 - 14); tx += 14 + c.measureText(sr.name).width + 14; }
   if (mt.ref) { const y = Math.round(Y(mt.ref)) + 0.5; c.strokeStyle = css('--ink-2'); c.beginPath(); c.moveTo(x0, y); c.lineTo(x1, y); c.stroke(); c.textAlign = 'right'; c.font = '500 11px "IBM Plex Sans", system-ui, sans-serif'; c.fillStyle = css('--ink-2'); c.fillText(mt.refLabel, x1, y - 9); }
   c.lineWidth = 2; c.lineJoin = 'round'; c.lineCap = 'round';
-  for (const sr of series) {
+  if (mt.stacked) for (const sr of series) {
+    c.beginPath();
+    for (let i = 0; i <= N; i++) { const x = X(i), y = Y(sr.top[i]); i ? c.lineTo(x, y) : c.moveTo(x, y); }
+    for (let i = N; i >= 0; i--) c.lineTo(X(i), Y(sr.bottom[i]));
+    c.closePath(); c.fillStyle = sr.col; c.globalAlpha = 0.75; c.fill(); c.globalAlpha = 1;
+    c.strokeStyle = css('--surface'); c.beginPath();
+    for (let i = 0; i <= N; i++) { const x = X(i), y = Y(sr.top[i]); i ? c.lineTo(x, y) : c.moveTo(x, y); }
+    c.stroke();
+  }
+  else for (const sr of series) {
     c.strokeStyle = sr.col; c.beginPath(); let started = false;
     for (let i = 0; i <= N; i++) { if (!isFinite(sr.d[i])) continue; const x = X(i), y = Y(sr.d[i]); started ? c.lineTo(x, y) : c.moveTo(x, y); started = true; }
     c.stroke();
@@ -486,9 +509,11 @@ function drawChart() {
     const i = clamp(Math.round((hoverX - x0) / (x1 - x0) * N), 0, N), x = Math.round(X(i)) + 0.5;
     c.strokeStyle = css('--axis'); c.beginPath(); c.moveTo(x, y0); c.lineTo(x, y1); c.stroke();
     const rows = series.filter(sr => isFinite(sr.d[i]));
-    for (const sr of rows) { c.beginPath(); c.arc(X(i), Y(sr.d[i]), 5.5, 0, Math.PI * 2); c.fillStyle = css('--surface'); c.fill(); c.beginPath(); c.arc(X(i), Y(sr.d[i]), 3.5, 0, Math.PI * 2); c.fillStyle = sr.col; c.fill(); }
+    for (const sr of rows) { const yv = mt.stacked ? sr.top[i] : sr.d[i]; c.beginPath(); c.arc(X(i), Y(yv), 5.5, 0, Math.PI * 2); c.fillStyle = css('--surface'); c.fill(); c.beginPath(); c.arc(X(i), Y(yv), 3.5, 0, Math.PI * 2); c.fillStyle = sr.col; c.fill(); }
     if (rows.length) {
-      tip.innerHTML = `<div class="yr">${YEAR0 + i}</div>` + rows.map(sr => `<div class="row"><span class="l"><span class="dot" style="--c:${sr.col}"></span>${sr.name}</span><span class="mono">${mt.fmt(sr.d[i])}</span></div>`).join('');
+      const list = mt.stacked ? [...rows].reverse() : rows, tot = mt.stacked ? rows.reduce((a, sr) => a + sr.d[i], 0) : null;
+      tip.innerHTML = `<div class="yr">${YEAR0 + i}</div>` + list.map(sr => `<div class="row"><span class="l"><span class="dot" style="--c:${sr.col}"></span>${sr.name}${mt.stacked ? ` <span class="pct">${(sr.d[i] / tot * 100).toFixed(0)}%</span>` : ''}</span><span class="mono">${mt.fmt(sr.d[i])}</span></div>`).join('')
+        + (mt.stacked ? `<div class="row tot"><span class="l">Total</span><span class="mono">${mt.fmt(tot)}</span></div>` : '');
       tip.style.display = 'block';
       const tw = tip.offsetWidth; tip.style.left = (X(i) + 14 + tw > W ? X(i) - 14 - tw : X(i) + 14) + 'px'; tip.style.top = clamp(y0 + 8, 8, H - tip.offsetHeight - 8) + 'px';
     } else tip.style.display = 'none';
