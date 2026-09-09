@@ -116,7 +116,7 @@ main{display:grid;grid-template-columns:380px 1fr;min-height:0}
 <body>
 <div id="app">
   <header>
-    <h1><a href="https://github.com/op12no2/yaps" target="_blank" rel="noopener">YAPS <small>yet another population simulator</small></a><span class="ver mono" title="Version">v1.2</span></h1>
+    <h1><a href="https://github.com/op12no2/yaps" target="_blank" rel="noopener">YAPS <small>yet another population simulator</small></a><span class="ver mono" title="Version">v1.3</span></h1>
     <div class="spacer"></div>
     <div class="field"><label for="year0">Start year</label><input id="year0" type="range" min="1950" max="2150" step="1"><span id="year0Val" class="mono val"></span></div>
     <div class="field"><label for="horizon">Years ahead</label><input id="horizon" type="range" min="10" max="200" step="5" value="75"><span id="horizonVal" class="mono val"></span></div>
@@ -570,11 +570,6 @@ function drawChart() {
   let tx = x0; c.fillText(mt.axis, tx, y0 - 14); tx += c.measureText(mt.axis).width + 18;
   if (series.length > 1) for (const sr of (mt.stacked ? [...series].reverse() : series)) { c.beginPath(); c.arc(tx + 5, y0 - 14, 4, 0, Math.PI * 2); c.fillStyle = sr.col; c.fill(); c.fillStyle = css('--ink-2'); c.fillText(sr.name, tx + 14, y0 - 14); tx += 14 + c.measureText(sr.name).width + 14; }
   if (mt.ref) { const y = Math.round(Y(mt.ref)) + 0.5; c.strokeStyle = css('--ink-2'); c.beginPath(); c.moveTo(x0, y); c.lineTo(x1, y); c.stroke(); c.textAlign = 'right'; c.font = '500 11px "IBM Plex Sans", system-ui, sans-serif'; c.fillStyle = css('--ink-2'); c.fillText(mt.refLabel, x1, y - 9); }
-  // lifetime: a faint diagonal from the birth year at the bottom to the death year at the top, clipped to the plot
-  if (state.died > state.born) {
-    const xa = X(state.born - state.year0), xb = X(state.died - state.year0);
-    if (xb > x0 && xa < x1) { c.save(); c.beginPath(); c.rect(x0, y0, x1 - x0, y1 - y0); c.clip(); c.strokeStyle = css('--ink-2'); c.globalAlpha = 0.45; c.lineWidth = 1.5; c.setLineDash([6, 5]); c.beginPath(); c.moveTo(xa, y1); c.lineTo(xb, y0); c.stroke(); c.restore(); }
-  }
   c.lineWidth = 2; c.lineJoin = 'round'; c.lineCap = 'round';
   if (mt.stacked) for (const sr of series) {
     c.beginPath();
@@ -590,6 +585,11 @@ function drawChart() {
     for (let i = 0; i <= N; i++) { if (!isFinite(sr.d[i])) continue; const x = X(i), y = Y(sr.d[i]); started ? c.lineTo(x, y) : c.moveTo(x, y); started = true; }
     c.stroke();
     const last = sr.d[N]; if (isFinite(last)) { c.beginPath(); c.arc(X(N), Y(last), 6, 0, Math.PI * 2); c.fillStyle = css('--surface'); c.fill(); c.beginPath(); c.arc(X(N), Y(last), 4, 0, Math.PI * 2); c.fillStyle = sr.col; c.fill(); }
+  }
+  // lifetime: a dashed diagonal, drawn over the data, from the birth year at the bottom to the death year at the top, clipped to the plot
+  if (state.died > state.born) {
+    const xa = X(state.born - state.year0), xb = X(state.died - state.year0);
+    if (xb > x0 && xa < x1) { c.save(); c.beginPath(); c.rect(x0, y0, x1 - x0, y1 - y0); c.clip(); c.strokeStyle = css('--ink'); c.globalAlpha = 0.7; c.lineWidth = 2; c.setLineDash([8, 6]); c.beginPath(); c.moveTo(xa, y1); c.lineTo(xb, y0); c.stroke(); c.restore(); }
   }
   if (hoverX !== null) {
     const i = clamp(Math.round((hoverX - x0) / (x1 - x0) * N), 0, N), x = Math.round(X(i)) + 0.5;
