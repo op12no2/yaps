@@ -17,10 +17,10 @@ Open the page. It starts with a plain, flat set-up: 70 million people, an age pr
 
 The left-hand panel holds the inputs. The chart fills the rest of the screen.
 
-- **Start year** (top bar) is the calendar year the scenario begins in. It only affects the labels: the model itself does not know what year it is, so a saved scenario is not tied to any date. It starts at the current year.
-- **Years ahead** (top bar) is a slider from 10 to 200 years.
+- **Start** (top bar) is the calendar year the scenario begins in. It only affects the labels: the model itself does not know what year it is, so a saved scenario is not tied to any date. It starts at the current year.
+- **Span** (top bar) is how many years ahead to run, from 10 to 200.
 - **Lifetime** (top bar) is a slider with two handles: drag one to a person's birth year and the other to their death year. A dashed line then climbs across the chart, from the birth year at the bottom to the death year at the top, so you can see where a life falls across the years shown. Hovering the chart also tells you how old that person is in that year. It changes nothing in the model; it is only a marker. To get rid of it, drag both handles to years outside the chart.
-- **Copy share link** puts your entire set-up into the page address and copies it. Anyone who opens that link sees exactly what you see.
+- **Share** puts your entire set-up into the page address and copies it. Anyone who opens that link sees exactly what you see.
 - **Reset** throws away your changes and goes back to the factory defaults. Click it twice: the first click arms it for three seconds, the second does it.
 
 ## Reading the chart
@@ -133,7 +133,7 @@ Things to bear in mind when reading it:
 
 Changes are saved in your browser automatically, so closing the tab does not lose anything. Nothing is sent anywhere.
 
-Copy share link creates an address containing the complete set-up. Sending it to someone lets them open exactly your inputs and graphs, and then change them without affecting yours.
+Share creates an address containing the complete set-up. Sending it to someone lets them open exactly your inputs and graphs, and then change them without affecting yours.
 
 ## Hosting it yourself
 

@@ -40,11 +40,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
 input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--accent);border:2px solid var(--surface)}
 input[type=range]:focus-visible{outline:none}
 input[type=range]:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 35%,transparent)}
-header input[type=range]{width:120px}
+header input[type=range]{width:160px}
 .field .val{min-width:2.4em;color:var(--ink)}
 #year0Val{min-width:3em}
 #lifeVal{min-width:5.6em}
-.dual{position:relative;width:160px;height:22px;flex:none}
+.dual{position:relative;width:220px;height:22px;flex:none}
 .dual .band{position:absolute;top:9px;height:4px;border-radius:2px;background:var(--accent);opacity:.55;pointer-events:none}
 .dual input[type=range]{position:absolute;inset:0;width:100%;pointer-events:none}
 .dual input[type=range]::-webkit-slider-thumb{pointer-events:auto}
@@ -116,12 +116,12 @@ main{display:grid;grid-template-columns:380px 1fr;min-height:0}
 <body>
 <div id="app">
   <header>
-    <h1><a href="https://github.com/op12no2/yaps" target="_blank" rel="noopener">YAPS <small>yet another population simulator</small></a><span class="ver mono" title="Version">v1.3</span></h1>
+    <h1><a href="https://github.com/op12no2/yaps" target="_blank" rel="noopener">YAPS <small>yet another population simulator</small></a><span class="ver mono" title="Version">v1.4</span></h1>
     <div class="spacer"></div>
-    <div class="field"><label for="year0">Start year</label><input id="year0" type="range" min="1950" max="2150" step="1"><span id="year0Val" class="mono val"></span></div>
-    <div class="field"><label for="horizon">Years ahead</label><input id="horizon" type="range" min="10" max="200" step="5" value="75"><span id="horizonVal" class="mono val"></span></div>
+    <div class="field"><label for="year0">Start</label><input id="year0" type="range" min="1950" max="2150" step="1"><span id="year0Val" class="mono val"></span></div>
+    <div class="field"><label for="horizon">Span</label><input id="horizon" type="range" min="10" max="200" step="5" value="75"><span id="horizonVal" class="mono val"></span></div>
     <div class="field" title="A person's birth and death years, drawn as a faint line across the chart"><label for="born">Lifetime</label><span class="dual"><span class="band" id="lifeBand"></span><input id="born" type="range" min="1900" max="2250" step="1" aria-label="Birth year"><input id="died" type="range" min="1900" max="2250" step="1" aria-label="Death year"></span><span id="lifeVal" class="mono val"></span></div>
-    <button class="btn" id="share">Copy share link</button>
+    <button class="btn" id="share">Share</button>
     <button class="btn" id="reset">Reset</button>
   </header>
   <main>
