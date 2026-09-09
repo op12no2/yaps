@@ -22,8 +22,8 @@ body{margin:0;background:var(--page);color:var(--ink);font:14px/1.45 "IBM Plex S
 button,input,select{font:inherit;color:inherit}
 .mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums}
 
-#app{display:grid;grid-template-rows:52px 1fr;height:100%}
-header{display:flex;align-items:center;gap:16px;padding:0 16px;border-bottom:1px solid var(--hair);background:var(--surface)}
+#app{display:grid;grid-template-rows:auto 1fr;height:100%}
+header{display:flex;flex-wrap:wrap;align-items:center;gap:4px 16px;min-height:52px;padding:6px 16px;border-bottom:1px solid var(--hair);background:var(--surface)}
 header h1{font-size:16px;font-weight:600;margin:0;letter-spacing:.01em}
 header h1 a{color:inherit;text-decoration:none}
 header h1 small{font-weight:400;color:var(--ink-2);margin-left:8px}
@@ -40,9 +40,17 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
 input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--accent);border:2px solid var(--surface)}
 input[type=range]:focus-visible{outline:none}
 input[type=range]:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 35%,transparent)}
-header input[type=range]{width:140px}
+header input[type=range]{width:120px}
 .field .val{min-width:2.4em;color:var(--ink)}
 #year0Val{min-width:3em}
+#lifeVal{min-width:5.6em}
+.dual{position:relative;width:160px;height:22px;flex:none}
+.dual .band{position:absolute;top:9px;height:4px;border-radius:2px;background:var(--accent);opacity:.55;pointer-events:none}
+.dual input[type=range]{position:absolute;inset:0;width:100%;pointer-events:none}
+.dual input[type=range]::-webkit-slider-thumb{pointer-events:auto}
+.dual input[type=range]::-moz-range-thumb{pointer-events:auto}
+.dual input[type=range]:last-child::-webkit-slider-runnable-track{background:transparent}
+.dual input[type=range]:last-child::-moz-range-track{background:transparent}
 .btn{background:var(--surface-2);border:1px solid transparent;border-radius:6px;padding:6px 12px;cursor:pointer;white-space:nowrap}
 .btn:hover{background:var(--surface-3)}
 .btn.danger{background:var(--danger);color:#fff}
@@ -93,6 +101,7 @@ main{display:grid;grid-template-columns:380px 1fr;min-height:0}
 .wide{width:100%;text-align:left}
 #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--page);padding:8px 14px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none}
 #toast.show{opacity:1}
+@media (max-width:1500px){header h1 small{display:none}}
 @media (max-width:820px){
   body{overflow:auto}
   #app{height:auto}
@@ -107,10 +116,11 @@ main{display:grid;grid-template-columns:380px 1fr;min-height:0}
 <body>
 <div id="app">
   <header>
-    <h1><a href="https://github.com/op12no2/yaps" target="_blank" rel="noopener">YAPS <small>yet another population simulator</small></a><span class="ver mono" title="Version">v1.1</span></h1>
+    <h1><a href="https://github.com/op12no2/yaps" target="_blank" rel="noopener">YAPS <small>yet another population simulator</small></a><span class="ver mono" title="Version">v1.2</span></h1>
     <div class="spacer"></div>
     <div class="field"><label for="year0">Start year</label><input id="year0" type="range" min="1950" max="2150" step="1"><span id="year0Val" class="mono val"></span></div>
     <div class="field"><label for="horizon">Years ahead</label><input id="horizon" type="range" min="10" max="200" step="5" value="75"><span id="horizonVal" class="mono val"></span></div>
+    <div class="field" title="A person's birth and death years, drawn as a faint line across the chart"><label for="born">Lifetime</label><span class="dual"><span class="band" id="lifeBand"></span><input id="born" type="range" min="1900" max="2250" step="1" aria-label="Birth year"><input id="died" type="range" min="1900" max="2250" step="1" aria-label="Death year"></span><span id="lifeVal" class="mono val"></span></div>
     <button class="btn" id="share">Copy share link</button>
     <button class="btn" id="reset">Reset</button>
   </header>
@@ -289,7 +299,7 @@ function simulate(st) {
 
 // ---------- state ----------
 const defaults = () => ({
-  horizon: 75, year0: new Date().getFullYear(), metric: 'pop', pop: 70e6, ageMax: AGE_MAX,
+  horizon: 75, year0: new Date().getFullYear(), metric: 'pop', pop: 70e6, ageMax: AGE_MAX, born: 1960, died: 2040,
   pyr: profileShape('balanced'),
   fert: [{ t: 0, v: 1.6 }, { t: 1, v: 1.6 }],
   life: [{ t: 0, v: 82 }, { t: 1, v: 82 }],
@@ -306,6 +316,7 @@ function valid(s) {
   if (!(s.metric in METRIC)) s.metric = 'pop';
   if (!isFinite(s.year0)) s.year0 = new Date().getFullYear();
   if (!Array.isArray(s.work)) s.work = defaults().work;
+  if (!isFinite(s.born) || !isFinite(s.died)) { const d = defaults(); s.born = d.born; s.died = d.died; }
   if (!Array.isArray(s.pyr)) s.pyr = profileShape(s.profile in PROFILES ? s.profile : 'balanced');
   else if (s.ageMax !== AGE_MAX) { const old = s.ageMax || 100; s.pyr = s.pyr.map(p => ({ t: p.t * old / AGE_MAX, v: p.v })).filter(p => p.t < 0.98); s.pyr.push({ t: 1, v: 0 }); }
   s.ageMax = AGE_MAX;
@@ -559,6 +570,11 @@ function drawChart() {
   let tx = x0; c.fillText(mt.axis, tx, y0 - 14); tx += c.measureText(mt.axis).width + 18;
   if (series.length > 1) for (const sr of (mt.stacked ? [...series].reverse() : series)) { c.beginPath(); c.arc(tx + 5, y0 - 14, 4, 0, Math.PI * 2); c.fillStyle = sr.col; c.fill(); c.fillStyle = css('--ink-2'); c.fillText(sr.name, tx + 14, y0 - 14); tx += 14 + c.measureText(sr.name).width + 14; }
   if (mt.ref) { const y = Math.round(Y(mt.ref)) + 0.5; c.strokeStyle = css('--ink-2'); c.beginPath(); c.moveTo(x0, y); c.lineTo(x1, y); c.stroke(); c.textAlign = 'right'; c.font = '500 11px "IBM Plex Sans", system-ui, sans-serif'; c.fillStyle = css('--ink-2'); c.fillText(mt.refLabel, x1, y - 9); }
+  // lifetime: a faint diagonal from the birth year at the bottom to the death year at the top, clipped to the plot
+  if (state.died > state.born) {
+    const xa = X(state.born - state.year0), xb = X(state.died - state.year0);
+    if (xb > x0 && xa < x1) { c.save(); c.beginPath(); c.rect(x0, y0, x1 - x0, y1 - y0); c.clip(); c.strokeStyle = css('--ink-2'); c.globalAlpha = 0.45; c.lineWidth = 1.5; c.setLineDash([6, 5]); c.beginPath(); c.moveTo(xa, y1); c.lineTo(xb, y0); c.stroke(); c.restore(); }
+  }
   c.lineWidth = 2; c.lineJoin = 'round'; c.lineCap = 'round';
   if (mt.stacked) for (const sr of series) {
     c.beginPath();
@@ -583,7 +599,8 @@ function drawChart() {
     if (rows.length) {
       const list = mt.stacked ? [...rows].reverse() : rows, tot = mt.stacked ? rows.reduce((a, sr) => a + sr.d[i], 0) : null;
       tip.innerHTML = `<div class="yr">${state.year0 + i}</div>` + list.map(sr => `<div class="row"><span class="l"><span class="dot" style="--c:${sr.col}"></span>${sr.name}${mt.stacked ? ` <span class="pct">${(sr.d[i] / tot * 100).toFixed(0)}%</span>` : ''}</span><span class="mono">${mt.fmt(sr.d[i])}</span></div>`).join('')
-        + (mt.stacked ? `<div class="row tot"><span class="l">Total</span><span class="mono">${mt.fmt(tot)}</span></div>` : '');
+        + (mt.stacked ? `<div class="row tot"><span class="l">Total</span><span class="mono">${mt.fmt(tot)}</span></div>` : '')
+        + (state.year0 + i >= state.born && state.year0 + i <= state.died && state.died > state.born ? `<div class="row tot"><span class="l">Age</span><span class="mono">${state.year0 + i - state.born}</span></div>` : '');
       tip.style.display = 'block';
       const tw = tip.offsetWidth; tip.style.left = (X(i) + 14 + tw > W ? X(i) - 14 - tw : X(i) + 14) + 'px'; tip.style.top = clamp(y0 + 8, 8, H - tip.offsetHeight - 8) + 'px';
     } else tip.style.display = 'none';
@@ -597,6 +614,15 @@ new ResizeObserver(() => drawChart()).observe(wrap);
 const horizonEl = document.getElementById('horizon'), horizonVal = document.getElementById('horizonVal'), year0El = document.getElementById('year0'), year0Val = document.getElementById('year0Val');
 year0El.addEventListener('input', () => { state.year0 = +year0El.value; year0Val.textContent = state.year0; drawChart(); renderSummary(); redrawEditors(); saveLocal(); });
 horizonEl.addEventListener('input', () => { state.horizon = +horizonEl.value; horizonVal.textContent = state.horizon; recompute(); redrawEditors(); });
+// Lifetime: two range inputs stacked on one track. The handles may cross; the lower value is always the birth year.
+const bornEl = document.getElementById('born'), diedEl = document.getElementById('died'), lifeVal = document.getElementById('lifeVal'), lifeBand = document.getElementById('lifeBand');
+function showLife() {
+  const lo = +bornEl.min, span = +bornEl.max - lo, t0 = (state.born - lo) / span, t1 = (state.died - lo) / span;
+  lifeBand.style.left = `calc(8px + ${t0} * (100% - 16px))`; lifeBand.style.width = `calc(${t1 - t0} * (100% - 16px))`;
+  lifeVal.textContent = `${state.born}–${state.died}`;
+}
+function lifeChanged() { const a = +bornEl.value, b = +diedEl.value; state.born = Math.min(a, b); state.died = Math.max(a, b); showLife(); drawChart(); saveLocal(); }
+bornEl.addEventListener('input', lifeChanged); diedEl.addEventListener('input', lifeChanged);
 document.getElementById('share').onclick = async () => {
   const url = shareUrl();
   try { await navigator.clipboard.writeText(url); toast('Link copied. Anyone opening it sees exactly this set-up.'); }
@@ -615,6 +641,7 @@ function toast(msg) { const t = document.getElementById('toast'); t.textContent 
 function init() {
   exitFocus();
   horizonEl.value = state.horizon; horizonVal.textContent = state.horizon; year0El.value = state.year0; year0Val.textContent = state.year0;
+  bornEl.value = state.born; diedEl.value = state.died; showLife();
   buildSidebar(); renderLegend(); recompute();
 }
 load();
